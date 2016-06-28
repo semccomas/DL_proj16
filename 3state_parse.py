@@ -34,3 +34,10 @@ if len(amino) != len(fa[1]):
 else:
     print 'Actual protein sequence == PDB prediction'
 
+count=0
+for char, a in zip(fa[1], amino):
+	count= count+1
+	if char != a: 
+		print 'missing or unmatching character: %s != %s' % char % a 
+	if char== a:
+		print char
