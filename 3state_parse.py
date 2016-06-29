@@ -67,59 +67,75 @@ d=Differ()
 diff= d.compare(fAA, dsspAA)
 comp= '\n'.join(diff)
 
-
-out_pre_encoded= open('not_encoded_test', 'w')    #will become encoded numpy array later on
-
-match= 0                                       #need this here as well as enumerate because we only want to count matches
+out_pre_encoded= open('not_encoded_test', 'w')                 #will become encoded numpy array later on
+match= 0                                                       #need both a counter as well as enumerate to be accessing two different lists with diff. values
 for n, line in enumerate(comp.splitlines()):
     if '-' not in line:
         out_pre_encoded.write(line[2] + ',' + dsspAA[match] + ',' +  str(x3states[match]) + '\n')
-        print line[2], dsspAA[match], x3states[match]
+       # print line[2], dsspAA[match], x3states[match]
         match= match +1 
     else:
         out_pre_encoded.write(fAA[n] + ',' + '!!' + ',' + '!!' + '\n')
-        print fAA[n], '!!', '!!'
+       # print fAA[n], '!!', '!!'
+
 #here !! symbolizes blank or missing, for both the amino acid and the states
-
-
-
-
 
 out_pre_encoded.close()
 
 
-######################################## one hot encoding the states #####################################
+######################################## one hot encoding the states ###################################################################################
 
-
-#### this takes the parsed but not encoded (dssp_values_not_encoded) as an input 1 and the file to write with as input 3 (dssp_values) and transforms this into a one hot encoded array
-#this is also modified from encoder.py
-#out=open(sys.argv[3], 'w')
+#### this takes the parsed but not encoded (dssp_values_not_encoded) as an input 1 and the file to write with as input 3 (dssp_values) and transforms this into a one hot encoded array........... this is also modified from encoder.py
 
 ### load the text as an array, make the arrays with the same shape (will look like: 
 #[[0],
 #[1],
-#[1], .... 
+#[1], ....reshape your array if it has one feature to -1, 1 or 1,-1 if it has one sample.. We want -1, 1
+#######################################################################################################################################################
 
+
+
+#out=open(sys.argv[3], 'w')
 
 
 load=np.loadtxt(open('not_encoded_test', 'r'), dtype=str, delimiter= ',')
-print load
-states= (load[:,2]).reshape(-1, 1)   #'reshape your array if it has one feature to -1, 1 or 1,-1 if it has one sample.'......
-#print states
 
-for i in states:
+
+
+NumsOnly= []
+for i in (load[:,2]).reshape(-1, 1):
     if '!!' not in i:
-        print i
+        NumsOnly.append(i)
+NumsOnly= np.asarray(NumsOnly).reshape(-1,1)
+print NumsOnly
         
-#transform the 3 states to one hot encoded
-'''
 enc= OneHotEncoder()
-encoded= enc.fit_transform(states).toarray()
+encoded= enc.fit_transform(NumsOnly).toarray()
 encoded= np.around(encoded, decimals=0)
-print encoded
+
+
+null= np.zeros(3)
+print null
+
+match= 0
+for y,z in zip(load, encoded):
+    if '!!' not in y:
+        print y, encoded[match]
+        match= match +1
+    else:
+        print y, null
+    
+#### I think the above zipped loop will eventually replace load with the tables and then we are donezo. 
 
 
 
+
+
+
+
+
+
+'''
 #and lastly put together the two arrays again, with the amino number on the leftmost column, and the other 3 columns are the encoded function
 final=np.concatenate((amino, encoded), axis=1)
 
