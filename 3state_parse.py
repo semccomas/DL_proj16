@@ -2,12 +2,14 @@
 
 import sys
 from difflib import *
+from sklearn.preprocessing import OneHotEncoder
+import numpy as np
 
 fa= open(sys.argv[1]).read().splitlines()
 dssp=open(sys.argv[2]).read().splitlines()
 
 aminodic= {'A':1, 'R':2, 'N':3, 'D':4, 'C':5, 'Q':6, 'E':7, 'G':8, 'H':9, 'I':10, 'L':11, 'K':12, 'M':13, 'F':14, 'P':15, 'S':16, 'T':17, 'W':18, 'Y':19, 'V':20} 
-statedic={'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2}
+statedic={'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2, '!!': '!!'}
 #0 is helix, 1 is strand, 2 is coil
 
 #################################################### parse the DSSP output and find the states and the amino acid ###############################################            
@@ -39,6 +41,13 @@ for line in dssp:
 
 
 
+###### transform the states to only 3 instead of 8. 
+#In the future you can probably just take this away and do one hot encoding directly
+x3states= []
+for s in states:
+    x3states.append(statedic[s])
+
+
 
 
 
@@ -46,8 +55,8 @@ for line in dssp:
 fAA= fa[1]                                         #
 print len(fAA), 'len faa', fAA                     #
 print 'dssp', dsspAA, len(dsspAA)                  #
-print states, len(states), 'states'                #
-                                                   #                                #
+print x3states, len(x3states), 'states'            #
+                                                   #                                
 ####################################################
 
 
@@ -59,16 +68,72 @@ diff= d.compare(fAA, dsspAA)
 comp= '\n'.join(diff)
 
 
+out_pre_encoded= open('not_encoded_test', 'w')    #will become encoded numpy array later on
+
 match= 0                                       #need this here as well as enumerate because we only want to count matches
 for n, line in enumerate(comp.splitlines()):
     if '-' not in line:
-        print line[2], dsspAA[match], states[match]
+        out_pre_encoded.write(line[2] + ',' + dsspAA[match] + ',' +  str(x3states[match]) + '\n')
+        print line[2], dsspAA[match], x3states[match]
         match= match +1 
     else:
+        out_pre_encoded.write(fAA[n] + ',' + '!!' + ',' + '!!' + '\n')
         print fAA[n], '!!', '!!'
-print 'line[2], dsspAA[match], states[match]'
-
 #here !! symbolizes blank or missing, for both the amino acid and the states
 
+
+
+
+
+out_pre_encoded.close()
+
+
 ######################################## one hot encoding the states #####################################
+
+
+#### this takes the parsed but not encoded (dssp_values_not_encoded) as an input 1 and the file to write with as input 3 (dssp_values) and transforms this into a one hot encoded array
+#this is also modified from encoder.py
+#out=open(sys.argv[3], 'w')
+
+### load the text as an array, make the arrays with the same shape (will look like: 
+#[[0],
+#[1],
+#[1], .... 
+
+
+
+load=np.loadtxt(open('not_encoded_test', 'r'), dtype=str, delimiter= ',')
+print load
+states= (load[:,2]).reshape(-1, 1)   #'reshape your array if it has one feature to -1, 1 or 1,-1 if it has one sample.'......
+#print states
+
+for i in states:
+    if '!!' not in i:
+        print i
+        
+#transform the 3 states to one hot encoded
+'''
+enc= OneHotEncoder()
+encoded= enc.fit_transform(states).toarray()
+encoded= np.around(encoded, decimals=0)
+print encoded
+
+
+
+#and lastly put together the two arrays again, with the amino number on the leftmost column, and the other 3 columns are the encoded function
+final=np.concatenate((amino, encoded), axis=1)
+
+
+#### the fmt and the decimals are options to only print 0.00 not 0.00000000 e00 kind of thing. More manageable files
+
+
+#np.savetxt(out, np.around(final, decimals=2),fmt='%.2f',delimiter='\t')
+
+#out.close()
+
+'''
+
+
+
+
 
