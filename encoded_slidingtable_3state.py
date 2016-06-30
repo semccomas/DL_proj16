@@ -57,9 +57,9 @@ for s in states:
 
 ##### just for comparing in writing the program #####
 fAA= fa[1]                                         #
-#print len(fAA), 'len faa', fAA                     #
-#print 'dssp', dsspAA, len(dsspAA)                  #
-#print x3states, len(x3states), 'states'            #
+print len(fAA), 'len faa', fAA                     #
+print 'dssp', dsspAA, len(dsspAA)                  #
+print x3states, len(x3states), 'states'            #
                                                    #                                
 ####################################################
 
@@ -117,16 +117,17 @@ null= np.zeros(3)
 
 encoded_outfile= open(sys.argv[3], 'w')
 match= 0
-for y,z in zip(load, encoded):
+
+NEWTHING= []    # trying to use this at the bottom of the file to compare to the table 
+for y in load:
     if '!!' not in y:
-        #print y, encoded[match]
-        encoded_outfile.write(str(y) + ' ' + str(encoded[match]) + '\n')
+        NEWTHING.append(encoded[match])
+        #encoded_outfile.write(str(encoded[match]) + '\n')
         match= match +1
     else:
-        #print y, null
-        encoded_outfile.write(str(y) + ' ' + str(null) + '\n')
+        NEWTHING.append(null)
+       # encoded_outfile.write(str(null) + '\n')
 
-encoded_outfile.close()
  
 
 print 'One hot encoding found in file: ' , encoded_outfile   
@@ -213,4 +214,30 @@ out.close()
 
 
 print 'Sliding table found at: ',  out
+
+
+
+
+############### putting the two together:
+
+#NEWTHING= list of the enc file, gonna replace that file here
+# vstack, not vSTACK because we want to just read this old array. Obvi this script is a fucking disaster at this point
+
+mofo= []
+count= 0
+for t in vstack:
+    if 1 not in t[:,7:8]:
+        mofo.append(null)
+       # encoded_outfile.write(str(null) + '\n')
+    else:
+        mofo.append(NEWTHING[count])
+       # encoded_outfile.write(str(NEWTHING[count]) + '\n')
+        count= count +1
+#print mofo
+print len(mofo)
+
+m= np.asarray(mofo)
+np.savetxt(encoded_outfile, np.around(m, decimals=0), fmt='%.0f')
+
+encoded_outfile.close()
 

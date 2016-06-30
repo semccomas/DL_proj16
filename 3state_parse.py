@@ -135,21 +135,5 @@ for y,z in zip(load, encoded):
 
 
 
-'''
-#and lastly put together the two arrays again, with the amino number on the leftmost column, and the other 3 columns are the encoded function
-final=np.concatenate((amino, encoded), axis=1)
-
-
-#### the fmt and the decimals are options to only print 0.00 not 0.00000000 e00 kind of thing. More manageable files
-
-
-#np.savetxt(out, np.around(final, decimals=2),fmt='%.2f',delimiter='\t')
-
-#out.close()
-
-'''
-
-
-
 
 
