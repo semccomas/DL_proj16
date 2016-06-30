@@ -11,16 +11,15 @@ from tables import *
 enc= open(sys.argv[1]).read().splitlines()
 slide= open(sys.argv[2])  #.read().splitlines()
 
-
-
-
 for n,line in enumerate(enc):
   #  print line
     pass
-print n
+print n +1
 
 class Practice(IsDescription):   ##
     name= StringCol(16)
+    array= Float64Col()
+
 
 h5file=open_file('practiceenc1.5h', mode= 'w', title= 'test file') ##
 group= h5file.create_group('/', 'group1', 'just some group') ##
@@ -29,13 +28,25 @@ table= h5file.create_table(group, 'encoded', Practice, 'one column encoding prac
 value=table.row
 
 for line in enc:
-    line= line.replace(']', ',')
-    line= line.replace('[', ' ')
-    line= line.split(',')
-    print line[1]
-    if line[1]:
-        value['name'] = line[1]
-        value.append()
+    line= line.replace(']', ' ')
+    line= line.replace('[', '\t')
+    line= line.split('\t')
+    print line[2]
+    value['name'] = line[2]
+    value.append()
+table.flush()
+
+
+x=np.loadtxt(slide)
+index= []
+for num, line in enumerate(x):
+    if num != 0 and num % 20 == 0:
+        index.append(num)
+
+slide= np.vsplit(x, index)
+for s in slide:
+    value['array']= s
+    value.append()
 table.flush()
 
 
@@ -43,18 +54,38 @@ table.flush()
 
 
 
-
-
-
-
-
-
-
-
-
-
+'''
+num=0
+loaded = []
+for line in x:
+    num= num +1
+    print line
+    # loaded.append(line)
+    if num == 20:
+        print line, num
+        num= 0
+print num, loaded
+'''
 
 '''
+f = openFile('test.hdf', 'w')
+atom = Atom.from_dtype(x.dtype)
+ds = f.createCArray(f.root, 'somename', atom, x.shape)
+ds[:] = x
+f.close()
+
+
+
+
+
+
+
+
+
+
+
+
+
 g= np.load(slide)
 for i in g:
     x= g[i]
