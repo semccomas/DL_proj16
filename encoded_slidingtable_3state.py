@@ -53,13 +53,16 @@ x3states= []
 for s in states:
     x3states.append(statedic[s])
 
-
+print 
+print
+print
+print
 
 ##### just for comparing in writing the program #####
 fAA= fa[1]                                         #
-print len(fAA), 'len faa', fAA                     #
-print 'dssp', dsspAA, len(dsspAA)                  #
-print x3states, len(x3states), 'states'            #
+#print len(fAA), 'len faa', fAA                     #
+#print 'dssp', dsspAA, len(dsspAA)                  #
+#print x3states, len(x3states), 'states'            #
                                                    #                                
 ####################################################
 
@@ -114,7 +117,8 @@ encoded= np.around(encoded, decimals=0)
 
 
 null= np.zeros(3)
-
+nullSM= np.zeros(2)
+nullXS= np.zeros(1)
 encoded_outfile= open(sys.argv[3], 'w')
 match= 0
 
@@ -125,10 +129,16 @@ for y in load:
         #encoded_outfile.write(str(encoded[match]) + '\n')
         match= match +1
     else:
-        NEWTHING.append(null)
+        #NEWTHING.append(null)
+        if len(encoded[1]) == 2:      
+            NEWTHING.append(nullSM)
+        elif len(encoded[1]) == 1:
+            NEWTHING.append(nullXS)
+        else: 
+            NEWTHING.append(null)
        # encoded_outfile.write(str(null) + '\n')
 
- 
+
 
 print 'One hot encoding found in file: ' , encoded_outfile   
  
@@ -227,14 +237,16 @@ mofo= []
 count= 0
 for t in vstack:
     if 1 not in t[:,7:8]:
-        mofo.append(null)
-       # encoded_outfile.write(str(null) + '\n')
+        if len(NEWTHING[5]) == 2:
+            mofo.append(nullSM)
+        elif len(NEWTHING[5]) == 1:
+            mofo.append(nullXS)
+        else:
+            mofo.append(null)
     else:
         mofo.append(NEWTHING[count])
-       # encoded_outfile.write(str(NEWTHING[count]) + '\n')
         count= count +1
-#print mofo
-print len(mofo)
+
 
 m= np.asarray(mofo)
 np.savetxt(encoded_outfile, np.around(m, decimals=0), fmt='%.0f')
