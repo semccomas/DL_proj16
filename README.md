@@ -20,3 +20,4 @@ pytable_array.py takes the 3state_feature/* as the input 1 and aa_profiles/* as 
 
 auto_parse.sh does the encoded_sliding table and pytable array on each matching dssp and data/training file. 
 
+testingx
