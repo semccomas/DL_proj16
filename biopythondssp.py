@@ -4,26 +4,55 @@ from difflib import *
 from sklearn.preprocessing import OneHotEncoder
 import numpy as np
 
-fa= open(sys.argv[1]).read().splitlines()
-#dssp=open(sys.argv[2]).read().splitlines()    #this will eventually become the pdb file that we run dssp on
-p=PDBParser()
-structure = p.get_structure("1EFQA", "1EFQA.pdb")
-model= structure[0]
-dssp= DSSP(model, "1EFQA.pdb")
-a_key = list(dssp.keys())#[31]
-#print dssp[a_key]
 
+##############################################################################################################################
+###################################################### PARSE DSSP ############################################################
+##############################################################################################################################
+
+fa= open(sys.argv[1]).read().splitlines()
+filename=sys.argv[2]    #this will eventually become the pdb file that we run dssp on
+dssp=open(filename)
+filename= filename[-9:]     #only the actual filename t.ex 1EFQA.pdb
+p=PDBParser()
+structure = p.get_structure(filename, dssp)
+model= structure[0]        #there is only one structure for dssp (NMR for example has more) and the dssp parser can only take one structure
+dssp= DSSP(model, filename)
+a_key = list(dssp.keys())
+
+statedic={'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2, '-':'XXX'}
+#0 is helix, 1 is strand, 2 is coil
+dsspAA=[ ]
+states= [ ] 
 for line in a_key:
 	print dssp[line]
+	dsspAA.append(dssp[line][1])
+	states.append(statedic[dssp[line][2]])
+print states
+##############################################################################################################################
+######################################################ONE HOT ENCODING #######################################################
+##############################################################################################################################
+
+seq= fa[1]
+#dsspAA seen above in parser
+d=Differ()
+diff= d.compare(seq, dsspAA)
+comp= '\n'.join(diff)
 
 
-
-
-#### notes to self, for our structures there is only one model. So structure [0] is going to be the only one that works
-#this is the new sliding table that I will add the the biopython dssp parser . Made 26 July
-
-
-
+#states=np.asarray(states).reshape(-1,1)
+NumsOnly= []
+final= [ ] 
+for val in states:
+	if val == 'XXX':
+		print '0 , 0, 0'
+		final.append(' 0 0 0 ')
+	else:
+		NumsOnly.append(val)
+		NumsOnlyArray=np.asarray(NumsOnly).reshape(-1,1)
+		enc= OneHotEncoder()
+		encoded= np.around(enc.fit_transform(NumsOnlyArray).toarray(), decimals= 0)
+		encoded= encoded.tolist()
+print encoded
 
 
 
@@ -33,8 +62,7 @@ for line in a_key:
 ###################################################### SLIDING TABLE #########################################################
 ##############################################################################################################################
 
-### get only the amino acids in file ## 
-seq= fa[1]
+#seq= fa[1] (just a reminder what seq is- appears in OHE)
 zeros= 15        #change this accordingly to how many zeros you want on each side. Be sure to think of how many lines of zeros you will have in the OHE part
 seq= ('o' * zeros) + seq + ('o' * zeros)
 print seq
