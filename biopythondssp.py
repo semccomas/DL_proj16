@@ -1,7 +1,7 @@
 from Bio.PDB import DSSP, PDBParser
 import sys
 from difflib import *
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import OneHotEncoder, Imputer
 import numpy as np
 
 
@@ -12,22 +12,24 @@ import numpy as np
 fa= open(sys.argv[1]).read().splitlines()
 filename=sys.argv[2]    #this will eventually become the pdb file that we run dssp on
 dssp=open(filename)
-filename= filename[-9:]     #only the actual filename t.ex 1EFQA.pdb
 p=PDBParser()
 structure = p.get_structure(filename, dssp)
 model= structure[0]        #there is only one structure for dssp (NMR for example has more) and the dssp parser can only take one structure
 dssp= DSSP(model, filename)
 a_key = list(dssp.keys())
 
-statedic={'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2, '-':'XXX'}
+#statedic={'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2, '-':np.nan}
 #0 is helix, 1 is strand, 2 is coil
+#above leads to only 3 OHE values when using imputer, below leads to 4. Leaving it like that because it seems to make more sense that it should have its own value if missing 
+statedic={'H':60, 'I':60 , 'G':60, 'E':80, 'B':80, 'T':1, 'S':1, 'L':1, '-':np.nan}
+
 dsspAA=[ ]
 states= [ ] 
 for line in a_key:
-	print dssp[line]
+#	print dssp[line]
 	dsspAA.append(dssp[line][1])
 	states.append(statedic[dssp[line][2]])
-print states
+
 ##############################################################################################################################
 ######################################################ONE HOT ENCODING #######################################################
 ##############################################################################################################################
@@ -38,25 +40,28 @@ d=Differ()
 diff= d.compare(seq, dsspAA)
 comp= '\n'.join(diff)
 
-
-#states=np.asarray(states).reshape(-1,1)
-NumsOnly= []
-final= [ ] 
-for val in states:
-	if val == 'XXX':
-		print '0 , 0, 0'
-		final.append(' 0 0 0 ')
+match=0
+total= [ ]
+for diff in comp.split('\n'):
+	if '-' not in diff:
+		total.append(states[match])
+		match= match+1
 	else:
-		NumsOnly.append(val)
-		NumsOnlyArray=np.asarray(NumsOnly).reshape(-1,1)
-		enc= OneHotEncoder()
-		encoded= np.around(enc.fit_transform(NumsOnlyArray).toarray(), decimals= 0)
-		encoded= encoded.tolist()
-print encoded
+		total.append(np.nan)
+print total , 'total, input to imputer and OHE', len(total)
 
+total=np.asarray(total).reshape(-1,1)
+imputer = Imputer(missing_values='NaN', strategy='mean').fit(total)		#if you change mean here be sure to change mean above 
+imputer = imputer.transform(total)
 
+enc=OneHotEncoder()
+encoded=np.around(enc.fit_transform(imputer).toarray(), decimals=0)
 
-
+minus= len(seq)-len(dsspAA)
+print encoded, len(encoded)
+print
+print 'The length of this file is now: %s (the length of the sequence)' % len(seq) , len(encoded)
+print 'This is %d different than the dssp file, which was: ' %minus, len(dsspAA)
 
 ##############################################################################################################################
 ###################################################### SLIDING TABLE #########################################################
