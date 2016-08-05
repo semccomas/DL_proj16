@@ -1,7 +1,7 @@
-from Bio.PDB import DSSP, PDBParser
-import sys
-from difflib import *
-from sklearn.preprocessing import OneHotEncoder, Imputer
+from Bio.PDB import DSSP, PDBParser 
+import sys 
+from difflib import * 
+from sklearn.preprocessing import OneHotEncoder, Imputer 
 import numpy as np
 
 
@@ -12,6 +12,8 @@ import numpy as np
 fa= open(sys.argv[1]).read().splitlines()
 filename=sys.argv[2]    #this will eventually become the pdb file that we run dssp on
 dssp=open(filename)
+#### OBS: sys.argv[3] is OHE table, sys.argv[4] is sliding table
+
 p=PDBParser()
 structure = p.get_structure(filename, dssp)
 model= structure[0]        #there is only one structure for dssp (NMR for example has more) and the dssp parser can only take one structure
@@ -39,30 +41,51 @@ seq= fa[1]
 d=Differ()
 diff= d.compare(seq, dsspAA)
 comp= '\n'.join(diff)
-
+print states, len(states)
+print comp, comp.count('\n')
 match=0
 total= [ ]
 for diff in comp.split('\n'):
-	if '-' not in diff:
+	if '-' not in diff and 'X' not in diff:
 		total.append(states[match])
 		match= match+1
+	elif 'X' in diff:
+		match= match + 1
 	else:
 		total.append(np.nan)
-print total , 'total, input to imputer and OHE', len(total)
 
-total=np.asarray(total).reshape(-1,1)
-imputer = Imputer(missing_values='NaN', strategy='mean').fit(total)		#if you change mean here be sure to change mean above 
+#### adding zeros to pad for the padded slider:
+n= np.nan
+Fpad= [n, n, n, n, n, n, n, n]      #using 9 values here because you want to start OHE for real when the feature is in the middle of the table
+padded = Fpad + total + Fpad
+#print padded, len(padded)
+
+###
+
+
+total=np.asarray(padded).reshape(-1,1)
+imputer = Imputer(missing_values='NaN', strategy='mean').fit(total)
 imputer = imputer.transform(total)
 
 enc=OneHotEncoder()
 encoded=np.around(enc.fit_transform(imputer).toarray(), decimals=0)
 
 minus= len(seq)-len(dsspAA)
-print encoded, len(encoded)
-print
-print 'The length of this file is now: %s (the length of the sequence)' % len(seq) , len(encoded)
-print 'This is %d different than the dssp file, which was: ' %minus, len(dsspAA)
 
+OHE=open(sys.argv[3], 'w')
+np.savetxt(OHE, np.around(encoded, decimals=0), fmt='%.0f')
+#print encoded, len(encoded)
+#print total, len(total)
+#print states, 'states'
+print
+
+
+print 'The length of this file is now: %s . Should == the length of the sequence+ 16 -->' % len(encoded) ,len(seq), 'which is:', (len(seq)+ 16)
+print 'This is %d different than the dssp file, which was: ' %minus, (len(dsspAA)+16)
+OHE.close()
+print
+print 
+print "OHE found in file: ", OHE
 ##############################################################################################################################
 ###################################################### SLIDING TABLE #########################################################
 ##############################################################################################################################
@@ -98,7 +121,9 @@ for index in xrange(len(seq)):
 				final.append(line)
 final=np.asarray(final)
 #print final
-out=open('blabblabh','w')
+out=open(sys.argv[4],'w')
 np.savetxt(out, np.around(final, decimals=0), fmt='%.0f')
 out.close()
 print 'Sliding table found at: ', out
+
+print 'Sliding table/ 20 should also == the length of the OHE table. Sliding table/20 =', (len(final)/20) 
