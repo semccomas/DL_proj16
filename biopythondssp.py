@@ -28,7 +28,7 @@ statedic={'H':60, 'I':60 , 'G':60, 'E':80, 'B':80, 'T':1, 'S':1, 'L':1, '-':np.n
 dsspAA=[ ]
 states= [ ] 
 for line in a_key:
-#	print dssp[line]
+	#print dssp[line]
 	dsspAA.append(dssp[line][1])
 	states.append(statedic[dssp[line][2]])
 
@@ -41,16 +41,15 @@ seq= fa[1]
 d=Differ()
 diff= d.compare(seq, dsspAA)
 comp= '\n'.join(diff)
-print states, len(states)
-print comp, comp.count('\n')
+
 match=0
 total= [ ]
 for diff in comp.split('\n'):
-	if '-' not in diff and 'X' not in diff:
+	if '+ X' in diff:
+		match= match + 1
+	elif '-' not in diff and 'X' not in diff:
 		total.append(states[match])
 		match= match+1
-	elif 'X' in diff:
-		match= match + 1
 	else:
 		total.append(np.nan)
 
@@ -58,10 +57,6 @@ for diff in comp.split('\n'):
 n= np.nan
 Fpad= [n, n, n, n, n, n, n, n]      #using 9 values here because you want to start OHE for real when the feature is in the middle of the table
 padded = Fpad + total + Fpad
-#print padded, len(padded)
-
-###
-
 
 total=np.asarray(padded).reshape(-1,1)
 imputer = Imputer(missing_values='NaN', strategy='mean').fit(total)
@@ -74,18 +69,14 @@ minus= len(seq)-len(dsspAA)
 
 OHE=open(sys.argv[3], 'w')
 np.savetxt(OHE, np.around(encoded, decimals=0), fmt='%.0f')
-#print encoded, len(encoded)
-#print total, len(total)
-#print states, 'states'
-print
 
 
-print 'The length of this file is now: %s . Should == the length of the sequence+ 16 -->' % len(encoded) ,len(seq), 'which is:', (len(seq)+ 16)
-print 'This is %d different than the dssp file, which was: ' %minus, (len(dsspAA)+16)
+
+
+#print 'The length of this file is now: %s . Should == the length of the sequence+ 16 -->' % len(encoded) ,len(seq), 'which is:', (len(seq)+ 16)
+#print 'This is %d different than the dssp file, which was: ' %minus, (len(dsspAA)+16)
 OHE.close()
-print
-print 
-print "OHE found in file: ", OHE
+ 
 ##############################################################################################################################
 ###################################################### SLIDING TABLE #########################################################
 ##############################################################################################################################
@@ -93,7 +84,7 @@ print "OHE found in file: ", OHE
 #seq= fa[1] (just a reminder what seq is- appears in OHE)
 zeros= 15        #change this accordingly to how many zeros you want on each side. Be sure to think of how many lines of zeros you will have in the OHE part
 seq= ('o' * zeros) + seq + ('o' * zeros)
-print seq
+
 
 ### iterate through each character in seq and make a row per character. Each row has 1 one and the rest are zeros 
 letters= 'ACDEFGHIKLMNPQRSTVWY'   # to create numbers for each amino acid
@@ -124,6 +115,10 @@ final=np.asarray(final)
 out=open(sys.argv[4],'w')
 np.savetxt(out, np.around(final, decimals=0), fmt='%.0f')
 out.close()
-print 'Sliding table found at: ', out
 
-print 'Sliding table/ 20 should also == the length of the OHE table. Sliding table/20 =', (len(final)/20) 
+#print 'Sliding table/ 20 should also == the length of the OHE table. Sliding table/20 =', (len(final)/20) 
+print padded
+print (len(final)/20), len(encoded), (len(seq)+16-30)
+print
+print "OHE found in file: ", OHE
+print 'Sliding table found at: ', out

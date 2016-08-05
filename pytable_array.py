@@ -3,7 +3,8 @@ import numpy as np
 import sys
 
 feat= np.loadtxt(sys.argv[1])
-name= 'group_' + (sys.argv[1])[21:26] #[16:21] for when using training data
+name= 'group_' + (sys.argv[1])[21:26]
+#FOR ABOVE:::::::: [21:26] for testing data #[16:21] for when using training data
 OH= np.loadtxt(sys.argv[2])
 #sysargv[3] is out file
 
@@ -25,15 +26,19 @@ group= h5.create_group('/', name, 'individual group')
 
 one_hot = h5.create_earray(group, name='one_hot', shape=(0, 20, 15), atom=tables.Int8Atom())
 #pssm = h5.create_earray(h5.root, name='pssm', shape=(0, 15, 21), atom=tables.Float32Atom())
+
 d=feat.ndim
 if d == 1:
     ss = h5.create_earray(group, name='ss', shape=(0, d), atom=tables.Int8Atom())
     feat=np.reshape(feat,(-1,1))
 else:
-    if len(feat[0]) == 3:
-        ss = h5.create_earray(group, name='ss', shape=(0, 3), atom=tables.Int8Atom())
-    else:
-        ss = h5.create_earray(group, name='ss', shape=(0, 2), atom=tables.Int8Atom())
+	if len(feat[0]) == 4:
+	    ss = h5.create_earray(group, name='ss', shape=(0, 4), atom=tables.Int8Atom())
+	elif len(feat[0]) == 3:
+	    ss = h5.create_earray(group, name='ss', shape=(0, 3), atom=tables.Int8Atom())
+	elif len(feat[0]) == 2:
+	    ss = h5.create_earray(group, name='ss', shape=(0, 2), atom=tables.Int8Atom())
+
 
 
 
