@@ -1,30 +1,65 @@
-## this is taken from the keraswork.py thing we started with. Just getting an idea of how we will make this first model
-
 from keras.models import Sequential
 from keras.layers import Dense, Dropout
-from keras.callbacks import TensorBoard
+#from keras.callbacks import TensorBoard
 import numpy as np
 import tables as tb
 
 np.random.seed(3)
-#### loading the tables ###
+##############################################################################################################################
+###################################################### LOADING TABLES ############################################################
+##############################################################################################################################
+
+############################### TRAINING SET ############################
+train_ss = []
+train_ohe = []
 dataset = tb.open_file('big_table')
-table= dataset.root.group_3EZMA.one_hot
-print table.attrs._f_list('all')
-   
+for group in dataset.walk_groups():
+	for array in group:
+		try:
+			where = np.where(np.max(array.ss.read(), axis=1) == 1)
+			#print where
+			#raw_input()
+			train_ss.append(array.ss.read()[where]) 
+			train_ohe.append(array.one_hot.read()[where])
+		except AttributeError:
+			pass
+
+train_ss = np.concatenate(train_ss, axis=0)
+train_ohe = np.concatenate(train_ohe, axis = 0)
+
+####################### TESTING SET #########################
+test_ss = []
+test_ohe = []
+testset = tb.open_file('big_test_table')
+for group in testset.walk_groups():
+	for array in group:
+		try:
+			where = np.where(np.max(array.ss.read(), axis=1) == 1)
+			#print where
+			#raw_input()
+			test_ss.append(array.ss.read()[where]) 
+			test_ohe.append(array.one_hot.read()[where])
+		except AttributeError:
+			pass
+
+test_ss = np.concatenate(test_ss, axis=0)
+test_ohe = np.concatenate(test_ohe, axis = 0)
+
+print len(train_ohe), len(train_ss)
+print len(test_ohe), len(test_ss)
+
+## change this later 
+X_train= train_ohe
+Y_train= train_ss
+X_test= test_ohe
+Y_test= test_ss
 
 
-
-#X_train = dataset[:,0]
-#Y_train = dataset[:,1:]
-#testset=np.loadtxt('big_test_table', delimiter='\t')
-#X_test = testset[:,0]
-#Y_test = testset[:,1:]
+##############################################################################################################################
+###################################################### THE MODEL ############################################################
+##############################################################################################################################
 
 
-
-
-'''
 model = Sequential()
 model.add(Dense(64, input_dim=1, init='uniform', activation='tanh'))
 #model.add(Dropout(0.5))
@@ -60,6 +95,9 @@ print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
 #from keras.utils.visualize_util import plot
 #plot(model, to_file='model.png')
 
+##############################################################################################################################
+###################################################### EVALUATION ############################################################
+##############################################################################################################################
 
 import matplotlib.pyplot as plt
 
@@ -74,4 +112,10 @@ plt.xlabel('epoch')
 plt.show()
 plt.savefig('old_dssp_loss.png')
 
-'''
+
+
+
+
+dataset.close()
+testset.close()
+
