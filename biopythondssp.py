@@ -28,7 +28,7 @@ statedic={'H':60, 'I':60 , 'G':60, 'E':80, 'B':80, 'T':1, 'S':1, 'L':1, '-':np.n
 dsspAA=[ ]
 states= [ ] 
 for line in a_key:
-	#print dssp[line]
+#	print dssp[line]
 	dsspAA.append(dssp[line][1])
 	states.append(statedic[dssp[line][2]])
 
@@ -41,7 +41,6 @@ seq= fa[1]
 d=Differ()
 diff= d.compare(seq, dsspAA)
 comp= '\n'.join(diff)
-
 match=0
 total= [ ]
 for diff in comp.split('\n'):
@@ -58,24 +57,22 @@ n= np.nan
 Fpad= [n, n, n, n, n, n, n, n]      #using 9 values here because you want to start OHE for real when the feature is in the middle of the table
 padded = Fpad + total + Fpad
 
-total=np.asarray(padded).reshape(-1,1)
-imputer = Imputer(missing_values='NaN', strategy='mean').fit(total)
-imputer = imputer.transform(total)
+total = np.asarray(padded)
 
-enc=OneHotEncoder()
-encoded=np.around(enc.fit_transform(imputer).toarray(), decimals=0)
+encoded = np.zeros((len(total), 3))
 
-minus= len(seq)-len(dsspAA)
+encoded[np.where(total == 60), 0] = 1
+encoded[np.where(total == 80), 1] = 1
+encoded[np.where(total == 1), 2] = 1
+#print encoded
+#print encoded.sum(axis=1)
+
 
 OHE=open(sys.argv[3], 'w')
 np.savetxt(OHE, np.around(encoded, decimals=0), fmt='%.0f')
-
-
-
-
+OHE.close()
 #print 'The length of this file is now: %s . Should == the length of the sequence+ 16 -->' % len(encoded) ,len(seq), 'which is:', (len(seq)+ 16)
 #print 'This is %d different than the dssp file, which was: ' %minus, (len(dsspAA)+16)
-OHE.close()
  
 ##############################################################################################################################
 ###################################################### SLIDING TABLE #########################################################
@@ -111,14 +108,15 @@ for index in xrange(len(seq)):
 			for line in slide: 					# because you cant append arrays to each other, change to a list and then back to array. Doesn't seem to hurt the values at all
 				final.append(line)
 final=np.asarray(final)
-#print final
 out=open(sys.argv[4],'w')
 np.savetxt(out, np.around(final, decimals=0), fmt='%.0f')
 out.close()
 
 #print 'Sliding table/ 20 should also == the length of the OHE table. Sliding table/20 =', (len(final)/20) 
-print padded
+
 print (len(final)/20), len(encoded), (len(seq)+16-30)
-print
 print "OHE found in file: ", OHE
 print 'Sliding table found at: ', out
+print 
+print 
+print 
