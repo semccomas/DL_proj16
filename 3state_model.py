@@ -1,5 +1,6 @@
+import matplotlib.pyplot as plt
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, RepeatVector
+from keras.layers import Dense, Dropout, Flatten
 #from keras.callbacks import TensorBoard
 import numpy as np
 import tables as tb
@@ -36,6 +37,9 @@ test_ohe= np.concatenate(test_ohe, axis = 0)
 test_ss= np.concatenate(test_ss, axis=0)
 
 
+np.savetxt('oldbleepbloop', np.around(test_ss, decimals= 2), fmt= '%.2f')
+
+
 ## change this later 
 X_train= train_ohe
 Y_train= train_ss
@@ -52,7 +56,8 @@ print
 
 
 model = Sequential()
-model.add(Dense(32, input_dim= 15, init='uniform', activation='tanh'))   
+model.add(Flatten(input_shape=(20, 15)))
+model.add(Dense(32, init='uniform', activation='tanh'))   
 model.add(Dropout(0.5))
 model.add(Dense(32, activation='tanh'))
 model.add(Dropout(0.5))
@@ -64,54 +69,92 @@ model.compile(loss='categorical_crossentropy',
               optimizer='adagrad',
               metrics=['accuracy'])
 
-model.fit(X_train, Y_train, nb_epoch= 20, batch_size= 16)
 
-
-'''
 
 ## sparse categorical was raising errors so I changed to just categorical
 
 batchsize= 1000         #using batch size more than once so defining it as a var to not forget to change all values each time
 
-nb_epoch= 10
+nb_epoch= 4
 #TB= TensorBoard(log_dir='./logs', histogram_freq=0, write_graph=True)
-
-
-
 history = model.fit(X_train, Y_train, nb_epoch=nb_epoch, batch_size=batchsize, validation_data=(X_test, Y_test))
 
-print history.history
-loss=history.history['loss']
+print history.history   #prints all values from the training periods (accuracy, val_accuracy, etc.)
+loss=history.history['loss']    
 #this will get us plottable numbers for making a graph. We have to include validation data into the history so that we actually have a testing set in there... 
 
 scores = model.evaluate(X_test, Y_test, batch_size=batchsize)
-print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))
+print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))    #prints accuracy, one value, in percent 
 
 
-#from keras.utils.visualize_util import plot
-#plot(model, to_file='model.png')
+
+predict=model.predict(X_test, batch_size= batchsize, verbose= 1)   #classify for the ss for each value. len == X_test len
+np.savetxt('bleepbloop', predict)
+
+
 
 ##############################################################################################################################
-###################################################### EVALUATION ############################################################
+################################################### EVALUATION / PLOTTING ####################################################
 ##############################################################################################################################
 
-import matplotlib.pyplot as plt
-
-x= []
+#### plotting loss ####
+epoch= []
 for r in xrange(nb_epoch):
-    x.append(r)
-print x
-
-plt.plot(x, loss)
+    epoch.append(r)
+'''
+plt.figure(3)
+plt.plot(epoch, loss)
 plt.ylabel('loss')
 plt.xlabel('epoch')
-plt.show()
-plt.savefig('old_dssp_loss.png')
-
-
-
-
 '''
-dataset.close()
-testset.close()
 
+##### plotting predictions ####
+maximum= np.amax(predict, axis= 1)
+positions= np.argmax(predict, axis= 1)
+
+def find (lst, pos, number):
+	for index in xrange(len(positions)):
+		if positions[index] == number:
+			pos.append(0.5)
+ 			if maximum[index] >= 0.7:
+				lst.append(maximum[index])
+			else:
+				lst.append(0)
+		else: 
+			lst.append(0)
+			pos.append(np.nan)
+
+
+helix= []
+h_pos= []
+sheet= []
+s_pos= []
+coil= []
+c_pos=[]		
+find(helix, h_pos, 0)
+find(sheet, s_pos, 1)
+find(coil, c_pos, 2)
+
+print
+print len(sheet), len(s_pos)
+print len(helix), len(h_pos)
+print len(coil), len(c_pos)
+
+def plot (fig_nb, line, dot, name):
+	plt.figure(fig_nb)
+	#plt.subplot(fig_nb)
+	plt.plot(line) 
+	plt.plot(dot, 'ko', label= 'Predicted %s' % name)
+	plt.ylim(ymin= -1, ymax= 2)
+	plt.xlabel('Position')
+	plt.ylabel('Probability of %s' %name)
+	plt.legend(loc= 'upper left')
+
+plot (1, helix, h_pos, 'Helix')
+plot (2, sheet, s_pos, 'Sheet')
+plot (3, coil, c_pos, 'Coil')
+
+plt.show()
+
+################ index 0 is helix, index 1 is strand and index 2 is coil 
+####'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2
