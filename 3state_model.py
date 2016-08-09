@@ -4,6 +4,7 @@ from keras.layers import Dense, Dropout, Flatten
 #from keras.callbacks import TensorBoard
 import numpy as np
 import tables as tb
+import sys 
 
 #np.random.seed(3)
 ##############################################################################################################################
@@ -37,16 +38,13 @@ test_ohe= np.concatenate(test_ohe, axis = 0)
 test_ss= np.concatenate(test_ss, axis=0)
 
 
-np.savetxt('oldbleepbloop', np.around(test_ss, decimals= 2), fmt= '%.2f')
-
-
-## change this later 
+ 
 X_train= train_ohe
 Y_train= train_ss
 X_test= test_ohe
 Y_test= test_ss
 
-print np.shape(X_train)
+
 print 
 print 
 
@@ -75,7 +73,7 @@ model.compile(loss='categorical_crossentropy',
 
 batchsize= 1000         #using batch size more than once so defining it as a var to not forget to change all values each time
 
-nb_epoch= 4
+nb_epoch= 1
 #TB= TensorBoard(log_dir='./logs', histogram_freq=0, write_graph=True)
 history = model.fit(X_train, Y_train, nb_epoch=nb_epoch, batch_size=batchsize, validation_data=(X_test, Y_test))
 
@@ -88,73 +86,87 @@ print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100))    #prints accurac
 
 
 
-predict=model.predict(X_test, batch_size= batchsize, verbose= 1)   #classify for the ss for each value. len == X_test len
-np.savetxt('bleepbloop', predict)
+#predict=model.predict(X_test, batch_size= batchsize, verbose= 1)   #classify for the ss for each value. len == X_test len
+#np.savetxt('bleepbloop', predict)
 
 
 
 ##############################################################################################################################
 ################################################### EVALUATION / PLOTTING ####################################################
 ##############################################################################################################################
-
+'''
 #### plotting loss ####
 epoch= []
 for r in xrange(nb_epoch):
     epoch.append(r)
-'''
+
 plt.figure(3)
 plt.plot(epoch, loss)
 plt.ylabel('loss')
 plt.xlabel('epoch')
 '''
 
+
+
 ##### plotting predictions ####
-maximum= np.amax(predict, axis= 1)
-positions= np.argmax(predict, axis= 1)
 
-def find (lst, pos, number):
-	for index in xrange(len(positions)):
-		if positions[index] == number:
-			pos.append(0.5)
- 			if maximum[index] >= 0.7:
-				lst.append(maximum[index])
-			else:
-				lst.append(0)
-		else: 
-			lst.append(0)
-			pos.append(np.nan)
+dataset = tb.open_file('big_test_table')
+for group in dataset.walk_groups():
+	for array in group:
+		single_protein= array.one_hot.read()
+		print np.shape(single_protein)
+		predict=model.predict(single_protein, batch_size= batchsize, verbose= 1)
+		raw_input()
+
+		maximum= np.amax(predict, axis= 1)				# max probability in each row
+		positions= np.argmax(predict, axis= 1)			# which index that (^) probability is 
+		def find (lst, pos, number):
+			for index in xrange(len(positions)):
+				if positions[index] == number:
+					pos.append(0.5)					#0.5 is here just because its in the middle of the graph so you can see it better. Can be whatever
+		 			if maximum[index] >= 0.6:
+						lst.append(maximum[index])
+					else:
+						lst.append(0)
+				else: 
+					lst.append(0)
+					pos.append(np.nan)         #nans dont get plotted so this removes the part of the plot with no info
 
 
-helix= []
-h_pos= []
-sheet= []
-s_pos= []
-coil= []
-c_pos=[]		
-find(helix, h_pos, 0)
-find(sheet, s_pos, 1)
-find(coil, c_pos, 2)
+		helix= []
+		h_pos= []
+		sheet= []
+		s_pos= []
+		coil= []
+		c_pos=[]		
+		find(helix, h_pos, 0)
+		find(sheet, s_pos, 1)
+		find(coil, c_pos, 2)
 
-print
-print len(sheet), len(s_pos)
-print len(helix), len(h_pos)
-print len(coil), len(c_pos)
+		
+		print len(sheet), len(s_pos)
+		print len(helix), len(h_pos)
+		print len(coil), len(c_pos)
+	
+		f, (ax1, ax2, ax3) = plt.subplots(3, sharex=True, sharey=True)
+		ax1.plot(helix, 'r')
+		ax1.plot(h_pos, 'ko')
+		ax1.set_title('Helix')
+		ax2.plot(sheet, 'g')
+		ax2.plot(s_pos, 'ko')
+		ax2.set_title('Sheet')
+		ax3.plot(coil, 'b')
+		ax3.plot(c_pos, 'ko')
+		ax3.set_title('Coil')
 
-def plot (fig_nb, line, dot, name):
-	plt.figure(fig_nb)
-	#plt.subplot(fig_nb)
-	plt.plot(line) 
-	plt.plot(dot, 'ko', label= 'Predicted %s' % name)
-	plt.ylim(ymin= -1, ymax= 2)
-	plt.xlabel('Position')
-	plt.ylabel('Probability of %s' %name)
-	plt.legend(loc= 'upper left')
+		plt.ylim(ymin= -1, ymax= 2)
+		plt.xlabel('Position')
+		plt.ylabel('Probability' )
+		plt.legend(loc= 'upper left')
+		
+		plt.show()
 
-plot (1, helix, h_pos, 'Helix')
-plot (2, sheet, s_pos, 'Sheet')
-plot (3, coil, c_pos, 'Coil')
+		#plt.savefig('testingbloopbleepblo.png')
 
-plt.show()
-
-################ index 0 is helix, index 1 is strand and index 2 is coil 
-####'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2
+		################ index 0 is helix, index 1 is strand and index 2 is coil 
+		####'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2
