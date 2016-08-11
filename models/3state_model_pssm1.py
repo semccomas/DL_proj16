@@ -1,18 +1,13 @@
+
 import matplotlib.pyplot as plt
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten
+from keras.layers import Dense, Dropout, Flatten, Convolution1D
 #from keras.callbacks import TensorBoard
 import numpy as np
 import tables as tb
 import sys 
 
 #np.random.seed(3)
-
-##### NOTE!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#I have changed things in this file to go between pssm and biopythondssp. 
-#1- table names. Roughly line 30. Comments explain
-#2- array name. Pssm is name for pssm array, one_hot for biopython. Changed twice in file, once in first function inputs and second when evaluating, roughly line 125
-#3- Flatten shape, was 20, 15, now 21, 15. Roughly line 70
 
 ##############################################################################################################################
 ###################################################### LOADING TABLES ############################################################
@@ -25,14 +20,14 @@ def inputs (filename, ohe, ss):
 				where = np.where(np.max(array.ss.read(), axis=1) == 1)
 				#print where
 				#raw_input()
-				ohe.append(array.one_hot.read()[where])		### changed from array.one_hot.read() for pssm, one more down low to change too
+				ohe.append(array.pssm.read()[where])		### changed from array.one_hot.read() for pssm, one more down low to change too
 				ss.append(array.ss.read()[where]) 
 			except AttributeError:
 				pass
 
 #### this is what you change to test different things ####
-table= 'big_table'			#'big_table' == biopythondssp original			pssm_table_jhE0 pssm_table_jhE3 == pssm 
-test_table= 'big_test_table'					#'big_test_table' == biopythondssp original				pssm_test_table_jhE0 pssm_test_table_jhE3 == pssm
+table= 'pssm_table_jhE0'			#'big_table' == biopythondssp original			pssm_table_jhE0 pssm_table_jhE3 == pssm 
+test_table= 'pssm_test_table_jhE0'					#'big_test_table' == biopythondssp original				pssm_test_table_jhE0 pssm_test_table_jhE3 == pssm
 
 
 train_ohe= []
@@ -55,20 +50,19 @@ Y_train= train_ss
 X_test= test_ohe
 Y_test= test_ss
 
-
 print 
 print 
-
 ##############################################################################################################################
 ###################################################### THE MODEL ############################################################
 ##############################################################################################################################
 
 
 model = Sequential()
-model.add(Flatten(input_shape=(20, 15)))		# This was changed from 20,15 to 21, 15
-model.add(Dense(32, init='uniform', activation='tanh'))   
+model.add(Convolution1D(64, 3, input_shape=(21, 15), input_length= 15 ))
+model.add(Flatten()) #(input_shape=(21, 15)))		# This was changed from 20,15 to 21, 15
+model.add(Dense(64, init='uniform', activation='tanh'))   
 model.add(Dropout(0.5))
-model.add(Dense(32, activation='tanh'))
+model.add(Dense(64, activation='tanh'))
 model.add(Dropout(0.5))
 model.add(Dense(3, activation='softmax'))
 
@@ -84,7 +78,7 @@ model.compile(loss='categorical_crossentropy',
 
 batchsize= 1000         #using batch size more than once so defining it as a var to not forget to change all values each time
 
-nb_epoch= 19
+nb_epoch= 40
 #TB= TensorBoard(log_dir='./logs', histogram_freq=0, write_graph=True)
 history = model.fit(X_train, Y_train, nb_epoch=nb_epoch, batch_size=batchsize, validation_data=(X_test, Y_test))
 
@@ -105,7 +99,7 @@ print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100)), 'accuracy'    #pr
 ##############################################################################################################################
 ################################################### EVALUATION / PLOTTING ####################################################
 ##############################################################################################################################
-'''
+
 #### plotting loss ####
 epoch= []
 for r in xrange(nb_epoch):
@@ -115,21 +109,21 @@ plt.figure(3)
 plt.plot(epoch, loss)
 plt.ylabel('loss')
 plt.xlabel('epoch')
-'''
 
+plt.show()
 
 
 dataset = tb.open_file(test_table)
 for group in dataset.walk_groups():
 	for array in group:
-		single_protein= array.one_hot.read()		## this I also changed from array.one_hot.read() to pssm. Should only be two instances in whole file
+		single_protein= array.pssm.read()		## this I also changed from array.one_hot.read() to pssm. Should only be two instances in whole file
 		print np.shape(single_protein)
 		predict=model.predict(single_protein, batch_size= batchsize, verbose= 1)
-	#	raw_input()
+		raw_input()
 
 		maximum= np.amax(predict, axis= 1)				# max probability in each row
 		positions= np.argmax(predict, axis= 1)			# which index that (^) probability is. Is same as model.predict_classes
-		raw_input()
+		
 
 		# compares two lists, list 2 is an index for the 3 values in list one, appends the maximum value to the appropriate group. Rest is 0. 
 		# pos is to later use in graph to show if predicted to be present. Really the only diff is threshold
@@ -185,3 +179,6 @@ for group in dataset.walk_groups():
 		####'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2
 		name= array._v_name
 		print name
+
+
+

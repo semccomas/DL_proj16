@@ -1,3 +1,4 @@
+
 import matplotlib.pyplot as plt
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Flatten
@@ -25,14 +26,14 @@ def inputs (filename, ohe, ss):
 				where = np.where(np.max(array.ss.read(), axis=1) == 1)
 				#print where
 				#raw_input()
-				ohe.append(array.one_hot.read()[where])		### changed from array.one_hot.read() for pssm, one more down low to change too
+				ohe.append(array.pssm.read()[where])		### changed from array.one_hot.read() for pssm, one more down low to change too
 				ss.append(array.ss.read()[where]) 
 			except AttributeError:
 				pass
 
 #### this is what you change to test different things ####
-table= 'big_table'			#'big_table' == biopythondssp original			pssm_table_jhE0 pssm_table_jhE3 == pssm 
-test_table= 'big_test_table'					#'big_test_table' == biopythondssp original				pssm_test_table_jhE0 pssm_test_table_jhE3 == pssm
+table= 'pssm_table_jhE0'			#'big_table' == biopythondssp original			pssm_table_jhE0 pssm_table_jhE3 == pssm 
+test_table= 'pssm_test_table_jhE0'					#'big_test_table' == biopythondssp original				pssm_test_table_jhE0 pssm_test_table_jhE3 == pssm
 
 
 train_ohe= []
@@ -58,6 +59,26 @@ Y_test= test_ss
 
 print 
 print 
+##############################################################################################################################
+###################################################### SLIDING WINDOW ########################################################
+##############################################################################################################################
+
+#WholeSeq= np.asarray(WholeSeq)
+'''
+window=[]
+for index in xrange(len(padded)):
+        slide= WholeSeq[0:,index:index+15]               #0: == use all rows ',' <column no> ':' <column no>
+        if len(slide[0]) == 15:
+            pass
+            for line in slide:                  # because you cant append arrays to each other, change to a list and then back to array. Doesn't seem to hurt the values at all
+                window.append(line)
+
+window=np.asarray(window)
+'''
+
+
+
+
 
 ##############################################################################################################################
 ###################################################### THE MODEL ############################################################
@@ -65,12 +86,12 @@ print
 
 
 model = Sequential()
-model.add(Flatten(input_shape=(20, 15)))		# This was changed from 20,15 to 21, 15
-model.add(Dense(32, init='uniform', activation='tanh'))   
+model.add(Flatten(input_shape=(21, 15)))		# This was changed from 20,15 to 21, 15
+model.add(Dense(64, init='uniform', activation='tanh'))   
 model.add(Dropout(0.5))
-model.add(Dense(32, activation='tanh'))
+model.add(Dense(64, activation='tanh'))
 model.add(Dropout(0.5))
-model.add(Dense(3, activation='softmax'))
+model.add(Dense(64, activation='softmax'))
 
 
 
@@ -84,7 +105,7 @@ model.compile(loss='categorical_crossentropy',
 
 batchsize= 1000         #using batch size more than once so defining it as a var to not forget to change all values each time
 
-nb_epoch= 19
+nb_epoch= 20
 #TB= TensorBoard(log_dir='./logs', histogram_freq=0, write_graph=True)
 history = model.fit(X_train, Y_train, nb_epoch=nb_epoch, batch_size=batchsize, validation_data=(X_test, Y_test))
 
@@ -115,21 +136,21 @@ plt.figure(3)
 plt.plot(epoch, loss)
 plt.ylabel('loss')
 plt.xlabel('epoch')
-'''
 
+'''
 
 
 dataset = tb.open_file(test_table)
 for group in dataset.walk_groups():
 	for array in group:
-		single_protein= array.one_hot.read()		## this I also changed from array.one_hot.read() to pssm. Should only be two instances in whole file
+		single_protein= array.pssm.read()		## this I also changed from array.one_hot.read() to pssm. Should only be two instances in whole file
 		print np.shape(single_protein)
 		predict=model.predict(single_protein, batch_size= batchsize, verbose= 1)
-	#	raw_input()
+		raw_input()
 
 		maximum= np.amax(predict, axis= 1)				# max probability in each row
 		positions= np.argmax(predict, axis= 1)			# which index that (^) probability is. Is same as model.predict_classes
-		raw_input()
+		
 
 		# compares two lists, list 2 is an index for the 3 values in list one, appends the maximum value to the appropriate group. Rest is 0. 
 		# pos is to later use in graph to show if predicted to be present. Really the only diff is threshold
@@ -177,7 +198,7 @@ for group in dataset.walk_groups():
 		plt.ylabel('Probability' )
 		plt.legend(loc= 'upper left')
 		
-		plt.show()
+	#	plt.show()
 
 		#plt.savefig()
 
@@ -185,3 +206,6 @@ for group in dataset.walk_groups():
 		####'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2
 		name= array._v_name
 		print name
+
+
+
