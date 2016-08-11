@@ -1,7 +1,7 @@
 
 import matplotlib.pyplot as plt
 from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten, Convolution1D
+from keras.layers import Dense, Dropout, Flatten, Convolution1D, MaxPooling1D
 #from keras.callbacks import TensorBoard
 import numpy as np
 import tables as tb
@@ -58,11 +58,20 @@ print
 
 
 model = Sequential()
-model.add(Convolution1D(64, 3, input_shape=(21, 15), input_length= 15 ))
-model.add(Flatten()) #(input_shape=(21, 15)))		# This was changed from 20,15 to 21, 15
-model.add(Dense(64, init='uniform', activation='tanh'))   
+model.add(Convolution1D(64, 3, input_shape=(21, 15), input_length= 15, activation ='relu'))
 model.add(Dropout(0.5))
-model.add(Dense(64, activation='tanh'))
+model.add(Convolution1D(64, 3, activation= 'relu')) #, input_shape=(21, 15), input_length= 15 ))
+model.add(Dropout(0.5))
+model.add(Convolution1D(64, 3, activation= 'relu')) #, input_shape=(21, 15), input_length= 15 ))
+model.add(Dropout(0.5))
+model.add(MaxPooling1D(pool_length= 2))
+
+
+
+model.add(Flatten()) #(input_shape=(21, 15)))		# This was changed from 20,15 to 21, 15
+model.add(Dense(64, init='uniform', activation='relu'))   
+model.add(Dropout(0.5))
+model.add(Dense(64, activation='relu'))
 model.add(Dropout(0.5))
 model.add(Dense(3, activation='softmax'))
 
@@ -76,9 +85,9 @@ model.compile(loss='categorical_crossentropy',
 
 ## sparse categorical was raising errors so I changed to just categorical
 
-batchsize= 1000         #using batch size more than once so defining it as a var to not forget to change all values each time
+batchsize= 50         #using batch size more than once so defining it as a var to not forget to change all values each time
 
-nb_epoch= 40
+nb_epoch= 100
 #TB= TensorBoard(log_dir='./logs', histogram_freq=0, write_graph=True)
 history = model.fit(X_train, Y_train, nb_epoch=nb_epoch, batch_size=batchsize, validation_data=(X_test, Y_test))
 
@@ -95,6 +104,8 @@ print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100)), 'accuracy'    #pr
 #np.savetxt('bleepbloop', predict)
 
 
+from keras.utils.visualize_util import plot
+plot(model, to_file='model.png')
 
 ##############################################################################################################################
 ################################################### EVALUATION / PLOTTING ####################################################
