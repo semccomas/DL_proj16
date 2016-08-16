@@ -1,7 +1,7 @@
 
 import matplotlib.pyplot as plt
-from keras.models import Model
-from keras.layers import Dense, Dropout, Flatten, Convolution1D, MaxPooling1D, Input, merge
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, Flatten, Convolution1D, MaxPooling1D
 #from keras.callbacks import TensorBoard
 import numpy as np
 import tables as tb
@@ -18,20 +18,25 @@ def inputs (filename, ohe, ss):
 		for array in group:
 			try:
 				where = np.where(np.max(array.ss.read(), axis=1) == 1)
-				ohe.append(array.one_hot.read()[where])		### changed from array.one_hot.read() for pssm, one more down low to change too
+				#print where
+				#raw_input()
+				ohe.append(array.pssm.read()[where])		### changed from array.one_hot.read() for pssm, one more down low to change too
 				ss.append(array.ss.read()[where]) 
 			except AttributeError:
 				pass
-	dataset.close()
 
-######################## sequence info ##########################
-table= 'big_table'			#'big_table' == biopythondssp original	8state_table is 8 states
-test_table= 'big_test_table'					#'big_test_table' == biopythondssp original		8_state_test_table is 8 states		
+#### this is what you change to test different things ####
+table= 'pssm_table_jhE3'			#'big_table' == biopythondssp original			pssm_table_jhE0 pssm_table_jhE3 == pssm 
+test_table= 'pssm_test_table_jhE3'					#'big_test_table' == biopythondssp original				pssm_test_table_jhE0 pssm_test_table_jhE3 == pssm
+
+
 train_ohe= []
 train_ss=[]
 inputs(table, train_ohe, train_ss)
 train_ohe= np.concatenate(train_ohe, axis = 0)			
 train_ss= np.concatenate(train_ss, axis=0)
+
+
 test_ohe= []
 test_ss= []
 inputs(test_table, test_ohe, test_ss)
@@ -39,83 +44,68 @@ test_ohe= np.concatenate(test_ohe, axis = 0)
 test_ss= np.concatenate(test_ss, axis=0)
 
 
-######################## pssm info ##########################
-pssm_table= 'pssm_table_jhE3'			#'big_table' == biopythondssp original			pssm_table_jhE0 pssm_table_jhE3 == pssm 
-pssm_test_table= 'pssm_test_table_jhE3'					#'big_test_table' == biopythondssp original				pssm_test_table_jhE0 pssm_test_table_jhE3 == pssm
-train_pssm= []
-train_ss=[]
-inputs(pssm_table, train_pssm, train_ss)
-train_pssm= np.concatenate(train_pssm, axis = 0)			
-train_ss= np.concatenate(train_ss, axis=0)
-test_pssm= []
-test_ss= []
-inputs(pssm_test_table, test_pssm, test_ss)
-test_pssm= np.concatenate(test_pssm, axis = 0)			
-test_ss= np.concatenate(test_ss, axis=0)
+ 
+X_train= train_ohe
+Y_train= train_ss
+X_test= test_ohe
+Y_test= test_ss
 
-
-### NOTE! Obviously the ss is the same for both pssm and seq so it does nothing to just redefine the list over again. Easier than changing the function
-
-'''
-#X_train= train_ohe  == train_pssm
-#Y_train= train_ss 	 
-#X_test= test_ohe	== test_pssm
-#Y_test= test_ss
-
-print np.shape(train_pssm), 'pssm'
-print np.shape(train_ss), 'sstr'
-print np.shape(train_ohe), 'ohe'
-print np.shape(test_ss), 'ss'
-print np.shape(test_pssm), 'tespss'
-print np.shape(test_ohe), 'testohs'
-'''
+print 
 print 
 ##############################################################################################################################
 ###################################################### THE MODEL ############################################################
 ##############################################################################################################################
-seq_input = Input(shape=(20,15))
-cs = Convolution1D(10, 3, activation= 'relu')(seq_input)
-cs = Convolution1D(10, 3, activation= 'relu')(cs)
-#cs = Convolution1D(10, 3, activation= 'relu')(cs)
-cs = Convolution1D(10, 3, activation= 'relu')(cs)
-#cs = Dropout(0.5)(cs)
-sx = Flatten()(cs)
 
-pssm_input = Input(shape=(21,15)) 
-cp = Convolution1D(10, 3, activation= 'relu')(pssm_input) 
-cp = Convolution1D(10, 3, activation= 'relu')(cp)
-#cp = Convolution1D(10, 3, activation= 'relu')(cp)
-cp = Convolution1D(10, 3, activation= 'relu')(cp)
-px = Flatten()(cp)
 
-x = merge([sx, px], mode='concat')
-x = Dense(64, activation='relu')(x)
-x = Dense(64, activation='relu')(x)
-x = Dropout(3)(x)
-predictions = Dense(3, activation='softmax')(x)
+model = Sequential()
+model.add(Convolution1D(10, 5, input_shape=(21, 15), input_length= 15, activation ='relu'))
+#model.add(Dropout(0.5))
+model.add(Convolution1D(10, 5, activation= 'relu')) #, input_shape=(21, 15), input_length= 15 ))
+#model.add(Dropout(0.5))
+model.add(Convolution1D(10, 5, activation= 'relu')) #, input_shape=(21, 15), input_length= 15 ))
+model.add(Dropout(0.5))
 
-model = Model(input=[seq_input, pssm_input], output=predictions)		
-model.compile(optimizer='adagrad',
-              loss='categorical_crossentropy',
+
+
+
+model.add(Flatten()) #(input_shape=(21, 15)))		# This was changed from 20,15 to 21, 15
+model.add(Dense(64, init='uniform', activation='relu'))   
+model.add(Dropout(0.5))
+model.add(Dense(64, activation='relu'))
+model.add(Dropout(0.5))
+model.add(Dense(3, activation='softmax'))
+
+
+
+model.compile(loss='categorical_crossentropy',
+              optimizer='adagrad',
               metrics=['accuracy'])
-model.summary()
-nb_epoch= 20
-batchsize= 200
 
-history = model.fit([train_ohe, train_pssm], train_ss, nb_epoch=nb_epoch, batch_size=batchsize, validation_data=([test_ohe, test_pssm], test_ss))
+
+
+## sparse categorical was raising errors so I changed to just categorical
+
+batchsize= 200         #using batch size more than once so defining it as a var to not forget to change all values each time
+
+nb_epoch= 20
+#TB= TensorBoard(log_dir='./logs', histogram_freq=0, write_graph=True)
+history = model.fit(X_train, Y_train, nb_epoch=nb_epoch, batch_size=batchsize, validation_data=(X_test, Y_test))
+
+print history.history   #prints all values from the training periods (accuracy, val_accuracy, etc.)
+loss=history.history['loss']    
+#this will get us plottable numbers for making a graph. We have to include validation data into the history so that we actually have a testing set in there... 
+
+scores = model.evaluate(X_test, Y_test, batch_size=batchsize)
+print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100)), 'accuracy'    #prints accuracy, one value, in percent 
+
+
+
+#predict=model.predict(X_test, batch_size= batchsize, verbose= 1)   #classify for the ss for each value. len == X_test len
+#np.savetxt('bleepbloop', predict)
 
 
 from keras.utils.visualize_util import plot
 plot(model, to_file='model.png')
-
-
-
-
-loss=history.history['loss']    
-#this will get us plottable numbers for making a graph. We have to include validation data into the history so that we actually have a testing set in there... 
-
-#scores = model.evaluate(test_pssm, test_ss, batch_size=batchsize)
-#print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100)), 'accuracy'    #prints accuracy, one value, in percent 
 
 ##############################################################################################################################
 ################################################### EVALUATION / PLOTTING ####################################################
@@ -135,15 +125,12 @@ plt.ylim(ymin=0)
 plt.show()
 
 
-pssmdata = tb.open_file(pssm_test_table)
-seqdata = tb.open_file(test_table)
-for pgroup , sgroup in zip(pssmdata.walk_groups() , seqdata.walk_groups()):
-	for parray, sarray in zip (pgroup, sgroup):
-		pssm = parray.one_hot.read()
-		seq = sarray.one_hot.read()
-		#single_protein= array.one_hot.read()		## this I also changed from array.one_hot.read() to pssm. Should only be two instances in whole file
-		#print np.shape(single_protein)
-		predict=model.predict([seq, pssm], batch_size= batchsize, verbose= 1)
+dataset = tb.open_file(test_table)
+for group in dataset.walk_groups():
+	for array in group:
+		single_protein= array.pssm.read()		## this I also changed from array.one_hot.read() to pssm. Should only be two instances in whole file
+		print np.shape(single_protein)
+		predict=model.predict(single_protein, batch_size= batchsize, verbose= 1)
 		raw_input()
 
 		maximum= np.amax(predict, axis= 1)				# max probability in each row
@@ -202,9 +189,8 @@ for pgroup , sgroup in zip(pssmdata.walk_groups() , seqdata.walk_groups()):
 
 		################ index 0 is helix, index 1 is strand and index 2 is coil 
 		####'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2
-		name= parray._v_name
+		name= array._v_name
 		print name
 
-pssmdata.close()
-seqdata.close()
-		
+
+

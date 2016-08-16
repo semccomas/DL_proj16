@@ -5,23 +5,42 @@
 read -r -p "Are you sure? [y/n] " response
 if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
 then
-	rm pssm_test_table_jhE0
+	rm pssm_rsa_jhE0
 
-	for i in data/test_input/*.fa.jhE0.aln; do  
+	for i in data/train_input/*.fa.jhE0.aln; do  
 	basei=`basename $i` 
-	for j in 3state_test_features/*.feat ; do 
+	for j in rsa_features/*.feat ; do 
 	basej=`basename $j` 
 	newi=${basei:0:5} 
 	newj=${basej:0:5}
 	if [ $newi = $newj ] ; then
 	#echo $newi $newj
 	echo $i $j
-	python parse_pssm.py $i $j 
+	python parse_rsa_pssm.py $i $j pssm_rsa_jhE0
 
 
 	fi
 	done
 	done
+
+	rm pssm_test_rsa_jhE0
+
+	for i in data/test_input/*.fa.jhE0.aln; do  
+	basei=`basename $i` 
+	for j in rsa_test_features/*.feat ; do 
+	basej=`basename $j` 
+	newi=${basei:0:5} 
+	newj=${basej:0:5}
+	if [ $newi = $newj ] ; then
+	#echo $newi $newj
+	echo $i $j
+	python parse_rsa_pssm.py $i $j pssm_test_rsa_jhE0
+
+
+	fi
+	done
+	done
+
 
 else
     echo 'cool'
