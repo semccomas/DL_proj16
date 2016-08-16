@@ -1,11 +1,13 @@
-import sys 
+
+import matplotlib.pyplot as plt
 from keras.models import Model
 from keras.layers import Dense, Dropout, Flatten, Convolution1D, MaxPooling1D, Input, merge
+#from keras.callbacks import TensorBoard
 import numpy as np
 import tables as tb
+import sys 
 from sklearn.metrics import confusion_matrix
-import matplotlib.pyplot as plt
-
+#np.random.seed(3)
 
 ##############################################################################################################################
 ###################################################### LOADING TABLES ############################################################
@@ -52,46 +54,13 @@ test_pssm= np.concatenate(test_pssm, axis = 0)
 test_ss= np.concatenate(test_ss, axis=0)
 
 
-################## 8 state sequence info #####################
+### NOTE! Obviously the ss is the same for both pssm and seq so it does nothing to just redefine the list over again. Easier than changing the function
 
-table_8= '8state_table'			#'big_table' == biopythondssp original	8state_table is 8 states
-test_table_8= '8state_test_table'					#'big_test_table' == biopythondssp original		8_state_test_table is 8 states		
-train_ohe_8= []
-train_ss_8=[]
-inputs(table_8, train_ohe_8, train_ss_8)
-train_ohe_8= np.concatenate(train_ohe_8, axis = 0)			
-train_ss_8= np.concatenate(train_ss_8, axis=0)
-test_ohe_8= []
-test_ss_8= []
-inputs(test_table_8, test_ohe_8, test_ss_8)
-test_ohe_8= np.concatenate(test_ohe_8, axis = 0)			
-test_ss_8= np.concatenate(test_ss_8, axis=0)
-
-
-
-
-############# 8 state pssm info ######################
-
-pssm_table_8= 'pssm_8state_jhE3'			#'big_table' == biopythondssp original			pssm_table_jhE0 pssm_table_jhE3 == pssm 
-pssm_test_table_8= 'pssm_test_8state_jhE3'					#'big_test_table' == biopythondssp original				pssm_test_table_jhE0 pssm_test_table_jhE3 == pssm
-train_pssm_8= []
-train_ss_8=[]
-inputs(pssm_table_8, train_pssm_8, train_ss_8)
-train_pssm_8= np.concatenate(train_pssm_8, axis = 0)			
-train_ss_8= np.concatenate(train_ss_8, axis=0)
-test_pssm_8= []
-test_ss_8= []
-inputs(pssm_test_table_8, test_pssm_8, test_ss_8)
-test_pssm_8= np.concatenate(test_pssm_8, axis = 0)			
-test_ss_8= np.concatenate(test_ss_8, axis=0)
-
-###################################
-###################################
-## HELLO!!!!! Above there are several repeats (we dont need to define the train or test ss twice between seq and pssm and
-#### similarly we dont need to define the ohe or pssm twice between the 3 and 8 states but it just makes things easier to know we have it all there ok)
-### I dont want them in there twice because given how the function is it could extend the lists to be double or triple the size instead of just starting empty again
-####################################
-##################################
+'''
+#X_train= train_ohe  == train_pssm
+#Y_train= train_ss 	 
+#X_test= test_ohe	== test_pssm
+#Y_test= test_ss
 
 print np.shape(train_pssm), 'pssm'
 print np.shape(train_ss), 'sstr'
@@ -99,105 +68,58 @@ print np.shape(train_ohe), 'ohe'
 print np.shape(test_ss), 'ss'
 print np.shape(test_pssm), 'tespss'
 print np.shape(test_ohe), 'testohs'
-
-
-print np.shape(train_pssm_8), 'pssm'
-print np.shape(train_ss_8), 'sstr'
-print np.shape(train_ohe_8), 'ohe'
-print np.shape(test_ss_8), 'ss'
-print np.shape(test_pssm_8), 'tespss'
-print np.shape(test_ohe_8), 'testohs'
-
-
-
+'''
 print 
-
-
-
-
 ##############################################################################################################################
 ###################################################### THE MODEL ############################################################
 ##############################################################################################################################
 seq_input = Input(shape=(20,15))
-cs1 = Convolution1D(10, 3, activation= 'relu')(seq_input)
-cs2 = Convolution1D(10, 3, activation= 'relu')(seq_input)
-cs3 = Convolution1D(10, 3, activation= 'relu')(seq_input)
-cs4 = Convolution1D(10, 3, activation= 'relu')(seq_input)
+cs = Convolution1D(10, 3, activation= 'relu')(seq_input)
+cs = Convolution1D(10, 3, activation= 'relu')(cs)
+#cs = Convolution1D(10, 3, activation= 'relu')(cs)
+cs = Convolution1D(10, 3, activation= 'relu')(cs)
 #cs = Dropout(0.5)(cs)
-cm1 = merge([cs1,cs2] , mode= 'concat')
-cm2= merge([cs3,cs4], mode= 'concat')
-cm= merge([cm1, cm2], mode = 'concat')
-cm = Dropout(0.1)(cm)
-sx = Flatten()(cm)
+sx = Flatten()(cs)
 
 pssm_input = Input(shape=(21,15)) 
-cp1 = Convolution1D(10, 3, activation= 'relu')(pssm_input) 
-cp2 = Convolution1D(10, 3, activation= 'relu')(pssm_input)
-cp3 = Convolution1D(10, 3, activation= 'relu')(pssm_input)
-cp4 = Convolution1D(10, 3, activation= 'relu')(pssm_input)
-pm1= merge([cp1, cp2], mode = 'concat')
-pm2= merge([cp3, cp4], mode= 'concat')
-pm= merge([pm1, pm2], mode= 'concat')
-pm= Dropout(0.1)(pm)
-px = Flatten()(pm)
+cp = Convolution1D(10, 3, activation= 'relu')(pssm_input) 
+cp = Convolution1D(10, 3, activation= 'relu')(cp)
+#cp = Convolution1D(10, 3, activation= 'relu')(cp)
+cp = Convolution1D(10, 3, activation= 'relu')(cp)
+px = Flatten()(cp)
 
 x = merge([sx, px], mode='concat')
-x = Dense(64, init= 'he_uniform', activation='relu')(x)
 x = Dense(64, activation='relu')(x)
-x = Dropout(0.5)(x)
+x = Dense(64, activation='relu')(x)
+x = Dropout(3)(x)
+predictions = Dense(3, activation='softmax')(x)
 
-predictions = Dense(3, activation='softmax', name = '3_state')(x)
-predictions_8 = Dense(8, activation = 'softmax', name = '8_state')(x)
-model = Model(input=[seq_input, pssm_input], output=[predictions, predictions_8])		
+model = Model(input=[seq_input, pssm_input], output=predictions)		
 model.compile(optimizer='adagrad',
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 model.summary()
 nb_epoch= 20
-batchsize= 1000
+batchsize= 200
 
-history = model.fit([train_ohe, train_pssm], [train_ss, train_ss_8], nb_epoch=nb_epoch, batch_size=batchsize, validation_data=([test_ohe, test_pssm], [test_ss, test_ss_8]))
+history = model.fit([train_ohe, train_pssm], train_ss, nb_epoch=nb_epoch, batch_size=batchsize, validation_data=([test_ohe, test_pssm], test_ss))
 
 from keras.utils.visualize_util import plot
 plot(model, to_file='model.png')
- 
-
-
-
-loss=history.history['loss']    
-#this will get us plottable numbers for making a graph. We have to include validation data into the history so that we actually have a testing set in there... 
-
-#scores = model.evaluate(test_pssm, test_ss, batch_size=batchsize)
-#print("%s: %.2f%%" % (model.metrics_names[1], scores[1]*100)), 'accuracy'    #prints accuracy, one value, in percent 
+  
 
 ##############################################################################################################################
 ################################################### EVALUATION / PLOTTING ####################################################
 ##############################################################################################################################
 
 #### confusion matrix
-index = model.predict([test_ohe, test_pssm], batch_size= batchsize, verbose= 1)
-index3= np.argmax(index[0], axis = 1)       # axis 1 gives you the max per row not total
-index8= np.argmax(index[1], axis = 1)
-true_val = test_ss.nonzero()[1]      # nonzero returns two items, we want the second
-true_val_8 = test_ss_8.nonzero()[1]
-
+index = np.argmax(model.predict([test_ohe, test_pssm], batch_size= batchsize, verbose= 1), axis = 1)
+true_val = test_ss.nonzero()[1]
 ### index and trueval should have the same numbers corresponding to each index. Helix is 0, sheet is 1, and coil is 2
-## for 8 state: 'H':1, 'I':2 , 'G':3, 'E':4, 'B':5, 'T':6, 'S':7, '-':8
-###H = a-helix, I = 5 helix (pi-helix) , G = 3-helix (310 helix), E = extended strand, participates in B ladder, B = residue in isolated B-bridge
-### T = hydrogen bonded turn, S = bend   - = coil (residues which are not in any of the above conformations).
 
-
-matrix = confusion_matrix(true_val, index3)
-matrix_8 = confusion_matrix(true_val_8, index8)
+matrix = confusion_matrix(true_val, index)
 print matrix
-print matrix_8	
-plt.figure()
-plt.imshow(matrix)
-plt.colorbar()
-plt.figure()
-plt.imshow(matrix_8)
-plt.colorbar()
-plt.show()
+
 
 '''
 #### plotting loss ####
@@ -213,7 +135,7 @@ plt.ylim(ymin=0)
 
 plt.show()
 
-#### plotting predictions ### 
+
 pssmdata = tb.open_file(pssm_test_table)
 seqdata = tb.open_file(test_table)
 for pgroup , sgroup in zip(pssmdata.walk_groups() , seqdata.walk_groups()):
