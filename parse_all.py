@@ -22,8 +22,8 @@ model= structure[0]        #there is only one structure for dssp (NMR for exampl
 dssp= DSSP(model, filename)
 a_key = list(dssp.keys())
 
-statedic3= {'H':1, 'I':2 , 'G':3 , 'E':4 , 'B':5, 'T':6, 'S':7, '-':8} #, '-':0}
-statedic8={'H':60, 'I':60, 'G':60, 'E':80, 'B':80, 'T':1, 'S':1, '-':1}
+statedic3={'H':1, 'I':1, 'G':1, 'E':2, 'B':2, 'T':3, 'S':3, '-':3}
+statedic8= {'H':1, 'I':2 , 'G':3 , 'E':4 , 'B':5, 'T':6, 'S':7, '-':8} #, '-':0}
 dsspAA=[]
 states3= [] 
 states8= []
@@ -93,6 +93,11 @@ def parse_PSSM(alignment):
 
 ## make the array like the old one, and pad it with zeros on both sides, seq length is therefore 30 longer, make it sliding. Should be exact same shape as before
 pssm= np.fliplr(np.rot90(parse_PSSM(sys.argv[3]), 3))
+
+#############################################################################################################################
+###################################################### SLIDING TABLES #######################################################
+##############################################################################################################################
+
 seq = fa[1]
 
 ##### encoding the sequence data to be a table
@@ -140,45 +145,55 @@ print np.shape(pssm)
 ######################################################ONE HOT ENCODING #######################################################
 ##############################################################################################################################
 
-seq= fa[1]
+### run this function for RSA, 3 state, and 8 state!
+# the constant can just stay nan. For RSA, we will keep this nan and use it later, for the one hot encoding there will be no nan because it will be replaced with zeros!!!! 
+def compare_files(feature): 		
+	d=Differ()
+	diff= d.compare(seq, dsspAA)
+	comp= '\n'.join(diff)
+	match=0
+	total= [ ]
 
-d=Differ()
-diff= d.compare(seq, dsspAA)
-comp= '\n'.join(diff)
-match=0
-total= [ ]
+	for diff in comp.split('\n'):
+		if '+ X' in diff:
+			match= match + 1
+		elif '-' not in diff and 'X' not in diff:
+			total.append(feature[match])
+			match= match+1
+		else:
+			total.append(np.nan)
 
-for diff in comp.split('\n'):
-	if '+ X' in diff:
-		match= match + 1
-	elif '-' not in diff and 'X' not in diff:
-		total.append(states[match])
-		match= match+1
-	else:
-		total.append(np.nan)
-
-padded=np.lib.pad(total, (8,8), 'constant', constant_values=(np.nan, np.nan))    #hey dipshit this is for padding the OHE features. Len of the sliding table has to == 15 always so instead of 15 on each side its 8
-
-encoded = np.zeros((len(padded), 8))
-
-encoded[np.where(padded == 1), 0] = 1
-encoded[np.where(padded == 2), 1] = 1
-encoded[np.where(padded == 3), 2] = 1
-encoded[np.where(padded == 4), 3] = 1
-encoded[np.where(padded == 5), 4] = 1
-encoded[np.where(padded == 6), 5] = 1
-encoded[np.where(padded == 7), 6] = 1
-encoded[np.where(padded == 8), 7] = 1
-
-OHE=open(sys.argv[3], 'w')
-np.savetxt(OHE, np.around(encoded, decimals=0), fmt='%.0f')
-OHE.close()
+	total=np.lib.pad(total, (8,8), 'constant', constant_values=(np.nan, np.nan))    #hey dipshit this is for padding the OHE features. Len of the sliding table has to == 15 always so instead of 15 on each side its 8
+	return total
 
 
+states3 = compare_files(states3)
+states8 = compare_files(states8)
+rsa = compare_files(rsa)
+#### these 3 should all be the same shape. That is, pssm/ WholeSeq divided by 21 or 20, respectively. Also = sequence length + 16
+### this below only pertains to 3 and 8 states. The output of compare_files(total) is the input to this
+
+def OHE (array, nb_feats):
+	encoded = np.zeros((len(array), nb_feats))
+
+	encoded[np.where(array == 1), 0] = 1
+	encoded[np.where(array == 2), 1] = 1
+	encoded[np.where(array == 3), 2] = 1
+	if nb_feats == 8:
+		encoded[np.where(array == 4), 3] = 1
+		encoded[np.where(array == 5), 4] = 1
+		encoded[np.where(array == 6), 5] = 1
+		encoded[np.where(array == 7), 6] = 1
+		encoded[np.where(array == 8), 7] = 1
+
+	return encoded 
+
+states3 = OHE(states3, 3)
+states8 = OHE(states8, 8)
 
 
 ##############################################################################################################################
-################################################### PSSM TO PYTABLE ####################################################
+################################################### TO PYTABLE #############################################################
 ##############################################################################################################################
 
 
@@ -186,30 +201,40 @@ name= 'group_' + sys.argv[1][-8:-3]
 print name 
 
 #feature= np.loadtxt(sys.argv[2])    #this is the features for secondary structure  
-h5= tb.open_file('8state_table', 'a')    ##########!!!!!!!!!! THIS IS THE ONLY THING YOU HAVE TO CHANGE !!!!!!!!!!!!!!!! 
+h5= tb.open_file(sys.argv[4], 'a')
 group= h5.create_group('/', name, 'individual group')
 
-one_hot = h5.create_earray(group, name='one_hot', shape=(0, 20, 15), atom=tb.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
-ss = h5.create_earray(group, name='ss', shape=(0, 8), atom=tb.Int8Atom())
+seq_tab = h5.create_earray(group, name='seq_tab', shape=(0, 20, 15), atom=tb.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
+pssm_tab = h5.create_earray(group, name='pssm_tab', shape=(0, 21, 15), atom=tb.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
+ss3_feat = h5.create_earray(group, name='ss3_feat', shape=(0, 3), atom=tb.Int8Atom())
+ss8_feat = h5.create_earray(group, name='ss8_feat', shape=(0, 8), atom=tb.Int8Atom())
+rsa_feat = h5.create_earray(group, name='rsa_feat', shape=(0, 1), atom=tb.Float32Atom())
+rsa=np.reshape(rsa,(-1,1))
 
-index= []
-#### splitting the sliding table into bits of 21 sized timesteps ## 
-for num, line in enumerate(final):
-    if num != 0 and num % 20 == 0:
-        index.append(num)
-final= np.vsplit(final, index)
-#print np.shape(final)
+#### splitting the sliding table into bits of 21 (pssm) or 20 (seq) sized timesteps ## 
+def timesteps (array, size):
+	index= []
+	for num, line in enumerate(array):
+	    if num != 0 and num % size == 0:
+	        index.append(num)
+	array= np.vsplit(array, index)     #split the array each time the window ends, this creates timesteps. index is the index where the window ends
+	return array
 
-for feat,line in zip(encoded, final):
-    ss.append(feat[np.newaxis,:])
-    one_hot.append(line[np.newaxis,:])
-
-
-print ss
-print one_hot
-
-
+WholeSeq = timesteps(WholeSeq, 20)
+pssm= timesteps(pssm, 21)
 
 
 
-'''
+
+##### putting all values into the pytable #############
+def to_table (array, table):
+	for line in array:
+		table.append(line[np.newaxis,:])
+	return table 
+
+WholeSeq = to_table(WholeSeq, seq_tab)
+pssm = to_table(pssm, pssm_tab)
+states3 = to_table (states3, ss3_feat)
+states8 = to_table (states8, ss8_feat)
+rsa = to_table (rsa, rsa_feat)
+
