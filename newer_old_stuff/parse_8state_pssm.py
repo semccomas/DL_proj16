@@ -5,6 +5,8 @@ import tables as tb
 import numpy as np
 import sys
 
+#### This is pretty much the same as parse_pssm. Just added for 8 states
+
 ##############################################################################################################################
 ################################################### PARSE AND MAKE PSSM ####################################################
 ##############################################################################################################################
@@ -73,8 +75,6 @@ for index in xrange(len(padded)):
                 window.append(line)
 
 window=np.asarray(window)
-
-np.savetxt('BEL', window)
 #np.savetxt('pssm_parsed_%s' % sys.argv[1][16:25], array, fmt= '%d')
 
 
@@ -84,20 +84,39 @@ np.savetxt('BEL', window)
 ##############################################################################################################################
 
 
-name= sys.argv[1][-17:-12]   #[16:21]
+name= 'group_' + sys.argv[1][-17:-12] 
 
-#feature= sys.argv[2]    #this is the features for secondary structure  
-h5= tb.open_file('pssm_table', 'a')
+feature= np.loadtxt(sys.argv[2])    #this is the features for secondary structure  
+h5= tb.open_file('pssm_test_8state_jhE0', 'a')    ##########!!!!!!!!!! THIS IS THE ONLY THING YOU HAVE TO CHANGE !!!!!!!!!!!!!!!! 
+########## 4 tables here.... pssm_8state_jhE0, pssm_test_8state_jhE0, pssm_8state_jhE3, pssm_test_8state_jhE3
 group= h5.create_group('/', name, 'individual group')
 
-print name
-#pssm = h5.create_earray(h5.root, name='pssm', shape=(0, 15, 21), atom=tables.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
-#ss = h5.create_earray(group, name='ss', shape=(0, 3), atom=tables.Int8Atom())
+
+pssm = h5.create_earray(group, name='one_hot', shape=(0, 21, 15), atom=tb.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
+ss = h5.create_earray(group, name='ss', shape=(0, 8), atom=tb.Int8Atom())
+
+index= []
+#### splitting the sliding table into bits of 21 sized timesteps ## 
+for num, line in enumerate(window):
+    if num != 0 and num % 21 == 0:
+        index.append(num)
+window= np.vsplit(window, index)
+#print np.shape(window)
+
+for feat,line in zip(feature, window):
+    ss.append(feat[np.newaxis,:])
+    pssm.append(line[np.newaxis,:])
 
 
-#for line in array:
-#    pssm.append(line[np.newaxis,:])
+print ss
+print pssm
 
-
-#h5.close()
-
+'''
+h5.close()
+dataset = tb.open_file('pssm_table')
+for group in dataset.walk_groups():
+    for array in group:
+        a=array.pssm.read()
+        print np.shape(a), a
+'''
+h5.close()

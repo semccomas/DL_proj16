@@ -211,6 +211,13 @@ ss8_feat = h5.create_earray(group, name='ss8_feat', shape=(0, 8), atom=tb.Int8At
 rsa_feat = h5.create_earray(group, name='rsa_feat', shape=(0, 1), atom=tb.Float32Atom())
 rsa=np.reshape(rsa,(-1,1))
 
+
+############## might need to add filter!!!!! ################# 
+
+
+
+
+
 #### splitting the sliding table into bits of 21 (pssm) or 20 (seq) sized timesteps ## 
 def timesteps (array, size):
 	index= []

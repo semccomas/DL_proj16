@@ -90,7 +90,7 @@ group= h5.create_group('/', name, 'individual group')
 
 
 pssm = h5.create_earray(group, name='one_hot', shape=(0, 21, 15), atom=tb.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
-ss = h5.create_earray(group, name='ss', shape=(0, 1), atom=tb.Int8Atom())
+ss = h5.create_earray(group, name='ss', shape=(0, 1), atom=tb.Float32Atom())
 feature=np.reshape(feature,(-1,1))
 
 index= []

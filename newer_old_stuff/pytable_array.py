@@ -3,7 +3,7 @@ import numpy as np
 import sys
 
 feat= np.loadtxt(sys.argv[1])
-name= 'group_' + (sys.argv[1])[21:26]
+name= 'group_' + (sys.argv[1])[16:21]
 #FOR ABOVE:::::::: [21:26] for testing data #[16:21] for when using training data
 OH= np.loadtxt(sys.argv[2])
 #sysargv[3] is out file
@@ -21,7 +21,7 @@ OH= np.vsplit(OH, index)
 
 
 
-h5= tables.open_file('big_test_table', 'a')
+h5= tables.open_file('big_table', 'a')
 group= h5.create_group('/', name, 'individual group')
 
 one_hot = h5.create_earray(group, name='one_hot', shape=(0, 20, 15), atom=tables.Int8Atom())

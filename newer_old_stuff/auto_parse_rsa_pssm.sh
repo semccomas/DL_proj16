@@ -48,4 +48,4 @@ fi
 
 
 
-#### 4 tables come from this: pssm_table_jhE0, pssm_test_table_jhE0, pssm_table_jhE3, and pssm_test_table_jhE3. You have to change the name of the table in parse_pssm too 
+#### 4 tables come from this: pssm_table_jhE0, pssm_test_table_jhE0, pssm_table_jhE0, and pssm_test_table_jhE0. You have to change the name of the table in parse_pssm too 
