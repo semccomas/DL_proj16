@@ -5,8 +5,6 @@ import tables as tb
 import numpy as np
 import sys
 
-#### This is pretty much the same as parse_pssm. Just added for 8 states
-
 ##############################################################################################################################
 ################################################### PARSE AND MAKE PSSM ####################################################
 ##############################################################################################################################
@@ -87,13 +85,12 @@ window=np.asarray(window)
 name= 'group_' + sys.argv[1][-17:-12] 
 
 feature= np.loadtxt(sys.argv[2])    #this is the features for secondary structure  
-h5= tb.open_file('pssm_test_8state_jhE0', 'a')    ##########!!!!!!!!!! THIS IS THE ONLY THING YOU HAVE TO CHANGE !!!!!!!!!!!!!!!! 
-########## 4 tables here.... pssm_8state_jhE0, pssm_test_8state_jhE0, pssm_8state_jhE3, pssm_test_8state_jhE3
+h5= tb.open_file('pssm_test_table_jhE0', 'a')    ##########!!!!!!!!!! THIS IS THE ONLY THING YOU HAVE TO CHANGE !!!!!!!!!!!!!!!! 
 group= h5.create_group('/', name, 'individual group')
 
 
-pssm = h5.create_earray(group, name='pssm', shape=(0, 21, 15), atom=tb.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
-ss = h5.create_earray(group, name='ss', shape=(0, 8), atom=tb.Int8Atom())
+pssm = h5.create_earray(group, name='one_hot', shape=(0, 21, 15), atom=tb.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
+ss = h5.create_earray(group, name='ss', shape=(0, 3), atom=tb.Int8Atom(), filters=tables.Filters(complevel=9, complib='blosc:snappy'))
 
 index= []
 #### splitting the sliding table into bits of 21 sized timesteps ## 

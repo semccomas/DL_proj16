@@ -1,23 +1,18 @@
+from Bio.PDB import DSSP, PDBParser 
+import sys 
+from difflib import * 
+from sklearn.preprocessing import OneHotEncoder, Imputer 
+import numpy as np
+
 
 ##############################################################################################################################
 ###################################################### PARSE DSSP ############################################################
 ##############################################################################################################################
-### taken from 8state_parse.py
-
-from Bio.PDB import DSSP, PDBParser 
-import sys 
-import numpy as np
-from difflib import *
-import tables as tb
 
 fa= open(sys.argv[1]).read().splitlines()
 filename=sys.argv[2]    #this will eventually become the pdb file that we run dssp on
 dssp=open(filename)
-
-#max_val= {'A':106, 'C':135, 'D':163, 'E':194, 'F':197, 'G':84, 'H':184, 'I':169, 'K':205, 'L':164, 'M':188, 'N':157, 'P':136,  'R':248, \
-#'S':130, 'T':142, 'V':142, 'W':227, 'Y':222, 'Z':196}
-
-#'B':160,    'Q':194,      'X':222 
+#### OBS: sys.argv[3] is OHE table, sys.argv[4] is sliding table
 
 p=PDBParser()
 structure = p.get_structure(filename, dssp)
@@ -25,45 +20,59 @@ model= structure[0]        #there is only one structure for dssp (NMR for exampl
 dssp= DSSP(model, filename)
 a_key = list(dssp.keys())
 
+#statedic={'H':0, 'I':0 , 'G':0, 'E':1, 'B':1, 'T':2, 'S':2, 'L':2, '-':np.nan}
+#0 is helix, 1 is strand, 2 is coil
+#above leads to only 3 OHE values when using imputer, below leads to 4. Leaving it like that because it seems to make more sense that it should have its own value if missing 
+statedic={'H':60, 'I':60 , 'G':60, 'E':80, 'B':80, 'T':1, 'S':1, '-':1}  
 
-rsa= []
-dsspAA= []
+dsspAA=[ ]
+states= [ ] 
 for line in a_key:
-	#print dssp[line]
-	rsa.append(dssp[line][3])
+#	print dssp[line]
 	dsspAA.append(dssp[line][1])
-
-rsa= np.asarray(rsa)
-rsa[np.where(rsa == 'NA')] = np.nan
-rsa=np.asarray(rsa, dtype= float)
-
+	states.append(statedic[dssp[line][2]])
 
 ##############################################################################################################################
-######################################################MAKING PADDED ARRAY #######################################################
+######################################################ONE HOT ENCODING #######################################################
 ##############################################################################################################################
 
 seq= fa[1]
-
+#dsspAA seen above in parser
 d=Differ()
 diff= d.compare(seq, dsspAA)
 comp= '\n'.join(diff)
 match=0
 total= [ ]
-
 for diff in comp.split('\n'):
 	if '+ X' in diff:
 		match= match + 1
 	elif '-' not in diff and 'X' not in diff:
-		total.append(rsa[match])
+		total.append(states[match])
 		match= match+1
 	else:
 		total.append(np.nan)
 
+#### adding zeros to pad for the padded slider:
+n= np.nan
+Fpad= [n, n, n, n, n, n, n, n]      #using 9 values here because you want to start OHE for real when the feature is in the middle of the table
+padded = Fpad + total + Fpad
 
-padded=np.lib.pad(total, (8,8), 'constant', constant_values=(np.nan, np.nan))    #hey dipshit this is for padding the OHE features. Len of the sliding table has to == 15 always so instead of 15 on each side its 8
+total = np.asarray(padded)
 
-np.savetxt(sys.argv[3],padded)
+encoded = np.zeros((len(total), 3))
 
+encoded[np.where(total == 60), 0] = 1
+encoded[np.where(total == 80), 1] = 1
+encoded[np.where(total == 1), 2] = 1
+#print encoded
+#print encoded.sum(axis=1)
+
+
+OHE=open(sys.argv[3], 'w')
+np.savetxt(OHE, np.around(encoded, decimals=0), fmt='%.0f')
+OHE.close()
+#print 'The length of this file is now: %s . Should == the length of the sequence+ 16 -->' % len(encoded) ,len(seq), 'which is:', (len(seq)+ 16)
+#print 'This is %d different than the dssp file, which was: ' %minus, (len(dsspAA)+16)
  
 ##############################################################################################################################
 ###################################################### SLIDING TABLE #########################################################
@@ -90,50 +99,24 @@ for l in letters:
     row.append(encode(seq, l))
 WholeSeq= np.asarray(row)
 
-
 final=[]
 for index in xrange(len(seq)):
 		slide= WholeSeq[0:,index:index+zeros] 				#0: == use all rows ',' <column no> ':' <column no>
 		if len(slide[0]) == zeros:
 			pass
-#			print slide, np.shape(slide)
+#			print slide
 			for line in slide: 					# because you cant append arrays to each other, change to a list and then back to array. Doesn't seem to hurt the values at all
 				final.append(line)
 final=np.asarray(final)
+out=open(sys.argv[4],'w')
+np.savetxt(out, np.around(final, decimals=0), fmt='%.0f')
+out.close()
 
-print np.shape(final), np.shape(padded)
+#print 'Sliding table/ 20 should also == the length of the OHE table. Sliding table/20 =', (len(final)/20) 
 
-
-##############################################################################################################################
-################################################### PSSM TO PYTABLE ####################################################
-##############################################################################################################################
-
-
-name= 'group_' + sys.argv[1][-8:-3] 
-print name 
-
-#feature= np.loadtxt(sys.argv[2])    #this is the features for secondary structure  
-h5= tb.open_file(sys.argv[4], 'a')    ##########!!!!!!!!!! THIS IS THE ONLY THING YOU HAVE TO CHANGE !!!!!!!!!!!!!!!! 
-group= h5.create_group('/', name, 'individual group')
-
-one_hot = h5.create_earray(group, name='one_hot', shape=(0, 20, 15), atom=tb.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
-ss = h5.create_earray(group, name='ss', shape=(0, 1), atom=tb.Int8Atom())
-padded=np.reshape(padded,(-1,1))
-
-#### splitting the sliding table into bits of 20 sized timesteps ## 
-index= []
-for num, line in enumerate(final):
-    if num != 0 and num % 20 == 0:
-        index.append(num)
-final= np.vsplit(final, index)
-
-
-for feat,line in zip(padded, final):
-    ss.append(feat[np.newaxis,:])
-    one_hot.append(line[np.newaxis,:])
-
-
-print ss
-print one_hot
-
-
+print (len(final)/20), len(encoded), (len(seq)+16-30)
+print "OHE found in file: ", OHE
+print 'Sliding table found at: ', out
+print 
+print 
+print 

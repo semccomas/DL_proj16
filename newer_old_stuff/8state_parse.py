@@ -20,7 +20,7 @@ model= structure[0]        #there is only one structure for dssp (NMR for exampl
 dssp= DSSP(model, filename)
 a_key = list(dssp.keys())
 
-statedic= {'H':1, 'I':2 , 'G':3, 'E':4, 'B':5, 'T':6, 'S':7, 'L':8, '-':0}
+statedic= {'H':1, 'I':2 , 'G':3, 'E':4, 'B':5, 'T':6, 'S':7, '-':8} #, '-':0}
 dsspAA=[ ]
 states= [ ] 
 for line in a_key:
@@ -63,7 +63,9 @@ encoded[np.where(padded == 6), 5] = 1
 encoded[np.where(padded == 7), 6] = 1
 encoded[np.where(padded == 8), 7] = 1
 
-
+OHE=open(sys.argv[3], 'w')
+np.savetxt(OHE, np.around(encoded, decimals=0), fmt='%.0f')
+OHE.close()
 
  
 ##############################################################################################################################
@@ -116,7 +118,7 @@ name= 'group_' + sys.argv[1][-8:-3]
 print name 
 
 #feature= np.loadtxt(sys.argv[2])    #this is the features for secondary structure  
-h5= tb.open_file('8_state_table', 'a')    ##########!!!!!!!!!! THIS IS THE ONLY THING YOU HAVE TO CHANGE !!!!!!!!!!!!!!!! 
+h5= tb.open_file('8state_table', 'a')    ##########!!!!!!!!!! THIS IS THE ONLY THING YOU HAVE TO CHANGE !!!!!!!!!!!!!!!! 
 group= h5.create_group('/', name, 'individual group')
 
 one_hot = h5.create_earray(group, name='one_hot', shape=(0, 20, 15), atom=tb.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
