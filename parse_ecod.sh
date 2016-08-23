@@ -5,7 +5,7 @@
 ### the .fa file will be copied to a new directory. You can use this in your auto_parse to compare to the pdb
 ## file for matches so that you dont have to move everything over. See auto_parse_all for how to do that 
 
-read -r -p "Are you sure???? [y/n] " response
+read -r -p "Are you sure?? [y/n] " response
 if [[ $response =~ ^([yY][eE][sS]|[yY])$ ]]
 then
 
@@ -20,21 +20,23 @@ echo 'protein_names written'
 
 ### this is like sys.argv 
 filename="$1"
-python parse_ecod.py protein_names ecod_domains.txt  $filename  #filtered_ecod_array.txt
+rm $filename
+python parse_ecod2vals.py protein_names ecod.latest.fasta.txt  $filename  #filtered_ecod_array.txt
 echo "python script done, output - $filename"
 
-sudo mkdir /data/pdbcull/matching_proteins
+#sudo rm -r /data/pdbcull/matching_proteins
+#sudo mkdir /data/pdbcull/matching_proteins
 
 echo 'making new protein directory.... '
 while IFS=';' read -ra line
 do
-    name="${line[1]}"
-for i in /data/pdb_cull/*.fa; do
+    name="${line[0]}"
+for i in /data/pdbcull/*.fa; do
 	basei=`basename $i` 
 	shorti=${basei:0:4}
 	if  [[ "$shorti" = "$name" ]]; then
-		#echo $shorti 
-		cp $i data/pdbcull/matching_proteins/
+		echo $shorti 
+		sudo cp $i /data/pdbcull/matching_proteins
 	fi
 done
 
