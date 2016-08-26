@@ -14,7 +14,7 @@ import collections
 ##############################################################################################################################
 
 fa= open(sys.argv[1]).read().splitlines()
-OG_seq = fa[1]	
+OG_seq = ''.join(fa[1:])	
 filename=sys.argv[2]    #this will eventually become the pdb file that we run dssp on
 alignments = sys.argv[3]
 alignment_seq = open(alignments).read().splitlines()
@@ -33,12 +33,16 @@ dsspAA=[]
 states3= [] 
 states8= []
 rsa= []
+phi = []
+psi = []
 for line in a_key:
  #   print dssp[line]
     dsspAA.append(dssp[line][1])
     states3.append(statedic3[dssp[line][2]])
     states8.append(statedic8[dssp[line][2]])
     rsa.append(dssp[line][3])
+    phi.append(dssp[line][4])
+    psi.append(dssp[line][5])
 
 
 rsa= np.asarray(rsa)
@@ -79,9 +83,12 @@ def compare_files(feature, seq, other, pad):
 	return total	
 
 
+
 states3 = compare_files(states3, alignment_seq, dsspAA, 1)
 states8 = compare_files(states8, alignment_seq, dsspAA, 1)
 rsa = compare_files(rsa, alignment_seq, dsspAA, 1)
+phi = compare_files(phi, alignment_seq, dsspAA, 1)
+psi = compare_files(psi, alignment_seq, dsspAA, 1)
 seq = compare_files(dsspAA, alignment_seq, dsspAA, 0)
 pssm = compare_files(alignment_seq, alignment_seq, alignment_seq, 0)
 
@@ -212,6 +219,9 @@ pssm = sliding_table(pssm)
 ##############################################################################################################################
 ################################################### TO PYTABLE #############################################################
 ##############################################################################################################################
+phi = np.reshape(phi,(-1, 1))
+psi = np.reshape(psi,(-1, 1))
+angles = np.concatenate((phi, psi), axis = 1)
 
 
 name= 'group_' + sys.argv[1][-8:-3] 
@@ -221,11 +231,12 @@ print name
 h5= tb.open_file(sys.argv[4], 'a')
 group= h5.create_group('/', name, 'individual group')
 
-seq_tab = h5.create_earray(group, name='seq_tab', shape=(0, 20, 15), atom=tb.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
-pssm_tab = h5.create_earray(group, name='pssm_tab', shape=(0, 21, 15), atom=tb.Float32Atom())   #would be 0, 21, 15 if you want it to be the shape of the old one
-ss3_feat = h5.create_earray(group, name='ss3_feat', shape=(0, 3), atom=tb.Int8Atom())
-ss8_feat = h5.create_earray(group, name='ss8_feat', shape=(0, 8), atom=tb.Int8Atom())
-rsa_feat = h5.create_earray(group, name='rsa_feat', shape=(0, 1), atom=tb.Float32Atom())
+seq_tab = h5.create_earray(group, name='seq_tab', shape=(0, 20, 15), atom=tb.Float32Atom(), filters=tb.Filters(complevel=9, complib='blosc:snappy'))   #would be 0, 21, 15 if you want it to be the shape of the old one
+pssm_tab = h5.create_earray(group, name='pssm_tab', shape=(0, 21, 15), atom=tb.Float32Atom(), filters=tb.Filters(complevel=9, complib='blosc:snappy'))   #would be 0, 21, 15 if you want it to be the shape of the old one
+ss3_feat = h5.create_earray(group, name='ss3_feat', shape=(0, 3), atom=tb.Int8Atom(), filters=tb.Filters(complevel=9, complib='blosc:snappy'))
+ss8_feat = h5.create_earray(group, name='ss8_feat', shape=(0, 8), atom=tb.Int8Atom(), filters=tb.Filters(complevel=9, complib='blosc:snappy'))
+rsa_feat = h5.create_earray(group, name='rsa_feat', shape=(0, 1), atom=tb.Float32Atom(), filters=tb.Filters(complevel=9, complib='blosc:snappy'))
+angles_feat = h5.create_earray(group, name='angles_feat', shape=(0, 2), atom=tb.Float32Atom(), filters=tb.Filters(complevel=9, complib='blosc:snappy'))
 rsa=np.reshape(rsa,(-1,1))
 
 
@@ -261,9 +272,12 @@ pssm = to_table(pssm, pssm_tab)
 states3 = to_table (states3, ss3_feat)
 states8 = to_table (states8, ss8_feat)
 rsa = to_table (rsa, rsa_feat)
+angles = to_table(angles, angles_feat)
 
 print np.shape(WholeSeq), 'shapeWS'
 print np.shape(pssm), 'shapePSSM'
 print np.shape(states3), ' shape 3 '
 print np.shape(states8), 'shape 8'
 print np.shape(rsa), 'rsa'
+print np.shape(angles), 'angles'
+
