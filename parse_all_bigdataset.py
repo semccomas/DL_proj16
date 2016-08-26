@@ -41,8 +41,8 @@ for line in a_key:
     states3.append(statedic3[dssp[line][2]])
     states8.append(statedic8[dssp[line][2]])
     rsa.append(dssp[line][3])
-    phi.append(dssp[line][4])
-    psi.append(dssp[line][5])
+    phi.append(float(dssp[line][4])/ 360)
+    psi.append(float(dssp[line][5])/ 360)
 
 
 rsa= np.asarray(rsa)
@@ -238,10 +238,6 @@ ss8_feat = h5.create_earray(group, name='ss8_feat', shape=(0, 8), atom=tb.Int8At
 rsa_feat = h5.create_earray(group, name='rsa_feat', shape=(0, 1), atom=tb.Float32Atom(), filters=tb.Filters(complevel=9, complib='blosc:snappy'))
 angles_feat = h5.create_earray(group, name='angles_feat', shape=(0, 2), atom=tb.Float32Atom(), filters=tb.Filters(complevel=9, complib='blosc:snappy'))
 rsa=np.reshape(rsa,(-1,1))
-
-
-############## might need to add filter!!!!! ################# 
-### also there were 3 difficult files, something went wrong in comp. In the future we can maybe take these away with an if loop just to check that they match
 
 
 
