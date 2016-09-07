@@ -29,6 +29,7 @@ states3= []
 states8= []
 rsa= []
 for line in a_key:
+ #   print dssp[line]
     dsspAA.append(dssp[line][1])
     states3.append(statedic3[dssp[line][2]])
     states8.append(statedic8[dssp[line][2]])
@@ -38,7 +39,6 @@ for line in a_key:
 rsa= np.asarray(rsa)
 rsa[np.where(rsa == 'NA')] = np.nan
 rsa=np.asarray(rsa, dtype= float)
-
 
 ##############################################################################################################################
 ###################################################### PARSE PSSM #######################################################
@@ -137,9 +137,8 @@ def sliding_table(array):
 WholeSeq = sliding_table(WholeSeq)
 pssm = sliding_table(pssm)
 
-print np.shape(WholeSeq)
-print np.shape(pssm)
-
+print np.shape(WholeSeq), 'shapeWS'
+print np.shape(pssm), 'shapePSSM'
 
 ##############################################################################################################################
 ######################################################ONE HOT ENCODING #######################################################
@@ -165,11 +164,13 @@ def compare_files(feature):
 
 	total=np.lib.pad(total, (8,8), 'constant', constant_values=(np.nan, np.nan))    #hey dipshit this is for padding the OHE features. Len of the sliding table has to == 15 always so instead of 15 on each side its 8
 	return total
-
+	#return comp
 
 states3 = compare_files(states3)
 states8 = compare_files(states8)
 rsa = compare_files(rsa)
+#print rsa
+
 #### these 3 should all be the same shape. That is, pssm/ WholeSeq divided by 21 or 20, respectively. Also = sequence length + 16
 ### this below only pertains to 3 and 8 states. The output of compare_files(total) is the input to this
 
@@ -213,7 +214,7 @@ rsa=np.reshape(rsa,(-1,1))
 
 
 ############## might need to add filter!!!!! ################# 
-
+### also there were 3 difficult files, something went wrong in comp. In the future we can maybe take these away with an if loop just to check that they match
 
 
 
