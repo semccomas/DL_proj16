@@ -20,4 +20,5 @@ parse_all_bigdataset.py
 2. Running the model:
 
 	- All of the models I run are in ~/Desktop/SummerProj/models
-	- The models are not particularly useful until model7 in my opinion. That is when I have the most data analysis and didn't do that thing where I was plotting incorrectly. Models 1-6 all include the big table as opposed to just parsing like 6 different tables. The models with other names are significantly older and I would not use them. Not very developed. I kind of moved in a chronological order. 
+	- The models are not particularly useful until model7 in my opinion. That is when I have the most data analysis and didn't do that thing where I was plotting incorrectly. Models 1-6 all include the big table as opposed to just parsing like 6 different tables. The models with other names are significantly older and I would not use them. Not very developed. I kind of moved in a chronological order from there.
+	- The final model I used was ****************************************** right now its model 13 but maybe that changes. Model 13
