@@ -162,7 +162,7 @@ def compare_files(feature):
 		else:
 			total.append(np.nan)
 
-	total=np.lib.pad(total, (8,8), 'constant', constant_values=(np.nan, np.nan))    #hey dipshit this is for padding the OHE features. Len of the sliding table has to == 15 always so instead of 15 on each side its 8
+	total=np.lib.pad(total, (8,8), 'constant', constant_values=(np.nan, np.nan))    #this is for padding the OHE features. Len of the sliding table has to == 15 always so instead of 15 on each side its 8
 	return total
 	#return comp
 
