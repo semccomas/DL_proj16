@@ -6,6 +6,13 @@ import tables as tb
 import math
 import collections
 
+########## This script parses PDB files for a specified protein. The RSA, the secondary structure information, and the protein name are parsed in the PARSE DSSP section
+########## in the PARSE PSSM section, the PSSM is calculated for each protein alignment
+######### in the ONE HOT section, one hot encoding is done for the secondary structure information, to be readable by the neural network
+######### in the SLIDING TABLES section, the amino acid sequence is structured so that it is fed into the neural network twenty amino acids at a time. It will only analyze
+######## one amino acid at a time, but the position of the amino acid and what amino acids surround it is not lost, which is important for inferring structure
+####### in the TO_PYTABLE section, the data is moved into a pytable which can then be easily read by the model 
+
 ##############################################################################################################################
 ###################################################### PARSE DSSP ############################################################
 ##############################################################################################################################
