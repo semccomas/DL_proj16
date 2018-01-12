@@ -13,7 +13,7 @@
    * This Pytable is then read into the Keras models
    * Several GB of PDB structures so this takes some time
 
-* [ECOD](https://github.com/semccomas/DL_proj16/tree/master/ECOD) stands for (evolutionary classification of domains)[http://prodata.swmed.edu/ecod/] and was started as another means of classifying proteins, never ended up going down this path but good for future use
+* [ECOD](https://github.com/semccomas/DL_proj16/tree/master/ECOD) stands for [evolutionary classification of domains](http://prodata.swmed.edu/ecod/) and was started as another means of classifying proteins, never ended up going down this path but good for future use
 
 * [script_readme.txt](https://github.com/semccomas/DL_proj16/blob/master/script_readme.txt) for transferring script data and how-to at the end of the project
 
