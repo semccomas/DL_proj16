@@ -1,19 +1,19 @@
 # DL_proj16
 
 
-*[models](https://github.com/semccomas/DL_proj16/tree/master/models) contains all versions of Keras models
-  * model12.py is the latest working model, includes for predictions for 3 state SS, 8 state SS, and RSA, including 3D plots, classification reports, confusion matrices, plotting loss, and doing all metrics per protein prediction as well
-  * most other models in here also work but don't include the same architecture or predictions
+* [models](https://github.com/semccomas/DL_proj16/tree/master/models) contains all versions of Keras models
+   * model12.py is the latest working model, includes for predictions for 3 state SS, 8 state SS, and RSA, including 3D plots, classification reports, confusion matrices, plotting loss, and doing all metrics per protein prediction as well
+   * most other models in here also work but don't include the same architecture or predictions
 
- *[auto_parse_all.sh](https://github.com/semccomas/DL_proj16/blob/master/auto_parse_all.sh) runs [parse_all.py](https://github.com/semccomas/DL_proj16/blob/master/parse_all.py), is for only a small amount of data and does not use pytables yet. Older version
+* [auto_parse_all.sh](https://github.com/semccomas/DL_proj16/blob/master/auto_parse_all.sh) runs [parse_all.py](https://github.com/semccomas/DL_proj16/blob/master/parse_all.py), is for only a small amount of data and does not use pytables yet. Older version
 
- *[auto_parse_all_bigdataset.sh](https://github.com/semccomas/DL_proj16/blob/master/auto_parse_all_bigdataset.sh) uses [parse_all_bigdataset.py](https://github.com/semccomas/DL_proj16/blob/master/parse_all_bigdataset.py) to generate Pytables for all pdb's in /data, need to specify if using jsE3 alignment or jsE0 alignment
+* [auto_parse_all_bigdataset.sh](https://github.com/semccomas/DL_proj16/blob/master/auto_parse_all_bigdataset.sh) uses [parse_all_bigdataset.py](https://github.com/semccomas/DL_proj16/blob/master/parse_all_bigdataset.py) to generate Pytables for all pdb's in /data, need to specify if using jsE3 alignment or jsE0 alignment
    * The two python scripts are practically the same, moved the Pytables around a bit to be more logical for reading into the model
    * These scripts take all the protein PDB files and make them into one large Pytable, which contains information on the amino acid sequence in a sliding table (so as to include information on surrounding amino acids in prediction), the MSA scores for each amino acid and does one hot encoding for 3 and 8 states of the secondary structure
    * This Pytable is then read into the Keras models
    * Several GB of PDB structures so this takes some time
 
-*[parse_ecod]
+* [ECOD](https://github.com/semccomas/DL_proj16/tree/master/ECOD) stands for (evolutionary classification of domains)[http://prodata.swmed.edu/ecod/] and was started as another means of classifying proteins, never ended up going down this path but good for future use
 
 *[script_readme.txt](https://github.com/semccomas/DL_proj16/blob/master/script_readme.txt) for transferring script data and how-to at the end of the project
 
